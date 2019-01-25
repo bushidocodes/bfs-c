@@ -11,7 +11,7 @@ makedist:
 	mkdir -p dist
 
 build: makedist
-	$(CC) ./src/bfs.c -o ./dist/a.out $(CCFLAGS)
+	$(CC) ./src/main.c -o ./dist/a.out $(CCFLAGS)
 
 run: build
 	cat ./res/data.txt | ./dist/a.out

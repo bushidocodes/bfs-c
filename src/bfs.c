@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <time.h>
 
 #include "constants.h"
 #include "graph.c"
@@ -108,16 +107,3 @@ void print_parents(graph *g)
     }
 }
 
-int main()
-{
-    graph *g;
-    g = malloc(sizeof(graph));
-    read_graph(g, false);
-    print_graph(g);
-    // Get a random vertex from the graph
-    srand(time(0));
-    int start = rand() % (g->number_vertices - 1);
-    bfs(g, start);
-    print_parents(g);
-    return 0;
-}
