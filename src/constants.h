@@ -1,0 +1,1 @@
+#define MAXV 1000 /* maximum number of vertices */
