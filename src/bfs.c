@@ -51,17 +51,11 @@ void bfs(graph *g, int start)
     while (len(q) > 0)
     {
         vertex = dequeue(q);
-        printf("Dequeued %d\n", vertex);
-        process_vertex_early(vertex);
         is_processed[vertex] = true;
         edgeLinkedList = g->edges[vertex];
         while (edgeLinkedList != NULL)
         {
             adjacentVertex = edgeLinkedList->destination;
-            if ((is_processed[adjacentVertex] == false) || g->is_directed)
-            {
-                process_edge(vertex, adjacentVertex);
-            }
             if (is_discovered[adjacentVertex] == false)
             {
                 enqueue(adjacentVertex, q);
@@ -70,19 +64,7 @@ void bfs(graph *g, int start)
             }
             edgeLinkedList = edgeLinkedList->next;
         }
-        process_vertex_late(vertex);
     }
-}
-
-void process_vertex_early(int vertex)
-{
-    printf("Processed vertex %d\n", vertex);
-}
-void process_vertex_late(int vertex) {}
-
-void process_edge(int source, int destination)
-{
-    printf("processed edge (%d, %d)\n", source, destination);
 }
 
 /* Use recursion to reverse the ancestry chain defined by the has_parent data structures to find the shortest path */
@@ -106,4 +88,3 @@ void print_parents(graph *g)
         printf("%d has parent %d\n", i, has_parent[i]);
     }
 }
-
