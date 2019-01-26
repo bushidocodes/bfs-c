@@ -14,7 +14,6 @@ void bfs(graph *g, int start);
 
 /* BFS Stuff */
 
-bool is_processed[MAXV + 1];
 bool is_discovered[MAXV + 1];
 int has_parent[MAXV + 1];
 
@@ -23,48 +22,63 @@ void initialize_search(graph *g)
 {
     for (int i = 1; i <= g->number_vertices; i++)
     {
-        is_processed[i] = is_discovered[i] = false;
+        is_discovered[i] = false;
         has_parent[-i] = -1;
     }
 }
 
 void bfs(graph *g, int start)
 {
-    queue *q;
     int vertex;
     int adjacentVertex;
     edge *edgeLinkedList;
 
     // Initialize queue
-    q = malloc(sizeof(queue));
-    reset(q, false);
+    queue *current_queue, *next_queue, *temp;
+    current_queue = malloc(sizeof(queue));
+    reset(current_queue, false);
+    next_queue = malloc(sizeof(queue));
+    reset(next_queue, false);
 
     // Add start to queue
     printf("Generated Root Vertex %d\n", start);
-    enqueue(start, q);
 
     // And set to discovered
+    enqueue(start, current_queue);
     is_discovered[start] = true;
     // And set self as parent
     has_parent[start] = start;
 
-    while (len(q) > 0)
+    while (len(current_queue) > 0)
     {
-        vertex = dequeue(q);
-        is_processed[vertex] = true;
+        vertex = dequeue(current_queue);
         edgeLinkedList = g->edges[vertex];
         while (edgeLinkedList != NULL)
         {
             adjacentVertex = edgeLinkedList->destination;
+            // Round Robin this code between MPI nodes
             if (is_discovered[adjacentVertex] == false)
             {
-                enqueue(adjacentVertex, q);
+                enqueue(adjacentVertex, next_queue);
                 is_discovered[adjacentVertex] = true;
                 has_parent[adjacentVertex] = vertex;
             }
             edgeLinkedList = edgeLinkedList->next;
         }
+        if (len(current_queue) == 0)
+        {
+            // Once the current queue is empty, join together next_queue and is_discovered
+            // And then rotate out levels
+            if (len(next_queue) > 0)
+            {
+                temp = current_queue;
+                current_queue = next_queue;
+                reset(temp, false);
+                next_queue = temp;
+            }
+        }
     }
+    // Combine has_parent
 }
 
 /* Use recursion to reverse the ancestry chain defined by the has_parent data structures to find the shortest path */
