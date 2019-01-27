@@ -7,12 +7,12 @@
 
 typedef struct queue
 {
-    int data[MAXV]; /* Array that stores the queue */
-    int start;      /* idx of the start of the queue */
-    int end;        /* ids of the end of the queue (exclusive) */
+    unsigned long data[MAXV]; /* Array that stores the queue */
+    int start;                /* idx of the start of the queue */
+    int end;                  /* ids of the end of the queue (exclusive) */
 } queue;
 
-void enqueue(int x, queue *q)
+void enqueue(unsigned long x, queue *q)
 {
     if (q->end >= MAXV)
     {
@@ -24,7 +24,7 @@ void enqueue(int x, queue *q)
     q->end++;
 }
 
-int dequeue(queue *q)
+unsigned long dequeue(queue *q)
 {
     if (q->start == q->end - 1)
     {
@@ -53,34 +53,3 @@ void reset(queue *q, bool should_zero_data)
     q->start = 0;
     q->end = 1;
 }
-
-// TODO: Turn this into unit test fodder
-// int main(void)
-// {
-//     queue *q;
-//     q = malloc(sizeof(queue));
-//     reset(q, false); /* I can use reset to initialize the start and end ints */
-//     enqueue(1, q);
-//     printf("Length: %d\n", len(q));
-//     enqueue(2, q);
-//     printf("Length: %d\n", len(q));
-//     enqueue(3, q);
-//     printf("Length: %d\n", len(q));
-//     enqueue(4, q);
-//     printf("Length: %d\n", len(q));
-//     enqueue(5, q);
-//     printf("Length: %d\n", len(q));
-//     printf("Dequeued %d\n", dequeue(q));
-//     printf("Length: %d\n", len(q));
-//     printf("Dequeued %d\n", dequeue(q));
-//     printf("Length: %d\n", len(q));
-
-//     printf("Dequeued %d\n", dequeue(q));
-//     printf("Length: %d\n", len(q));
-
-//     printf("Dequeued %d\n", dequeue(q));
-//     printf("Length: %d\n", len(q));
-
-//     free(q);
-//     return 0;
-// }

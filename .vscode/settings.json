@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "aml.h": "c",
+        "stdlib.h": "c",
+        "stdbool.h": "c"
+    }
+}

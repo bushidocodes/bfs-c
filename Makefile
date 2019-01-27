@@ -3,7 +3,7 @@
 ## Define compiler and flags
 CC=mpicc 
 CXX=cc 
-CCFLAGS=-g -std=c99 -Wall -Werror -lpthread -lm
+CCFLAGS=-g -std=c99 -Wall -lpthread -lm
 
 all: build
 
@@ -19,11 +19,10 @@ build-bfs: makedist
 build: build-bfs
 
 run-generator: build-generator
-	./dist/generategraph.out 16 16
+	./dist/generategraph.out 8 16
 
 run-bfs: build-bfs
-	mpirun -n 4 ./dist/bfs.out
-	# cat ./res/data.txt | ./dist/bfs.out
+	mpirun -n 4 ./dist/bfs.out --mca orte_base_help_aggregate 0
 
 clean: 
 	rm -f ./dist/*
