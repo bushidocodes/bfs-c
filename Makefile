@@ -7,6 +7,9 @@ CCFLAGS=-g -std=c99 -Wall -lpthread -lm
 
 all: build
 
+makeres:
+	mkdir -p res
+
 makedist:
 	mkdir -p dist
 
@@ -18,11 +21,13 @@ build-bfs: makedist
 
 build: build-bfs
 
-run-generator: build-generator
+run-generator: build-generator makeres
 	./dist/generategraph.out 8 16
 
 run-bfs: build-bfs
-	mpirun -n 4 ./dist/bfs.out --mca orte_base_help_aggregate 0
+	mpirun -n 2 ./dist/bfs.out --mca orte_base_help_aggregate 0
+
+run: run-generator run-bfs
 
 clean: 
 	rm -f ./dist/*

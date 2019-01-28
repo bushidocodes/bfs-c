@@ -5,6 +5,8 @@
 
 #include "rand_uint64.c"
 
+#define FILE_PATH "./res/graph"
+
 typedef struct header
 {
     unsigned long numVertices;
@@ -32,7 +34,7 @@ int main(int argc, char *argv[])
 
     newHeader = malloc(sizeof(header));
     newEdgerecord = malloc(sizeof(edgerecord));
-    fp = fopen("/d/scratch/millionAsBinary", "w");
+    fp = fopen(FILE_PATH, "w");
 
     edgeFactor = (argc == 3) ? atoi(argv[2]) : 16;
 
@@ -74,7 +76,7 @@ int main(int argc, char *argv[])
     printf("%lu %llu\n", newHeader->numVertices, newHeader->numEdges);
 
     // Now Re-open to Read
-    fp = fopen("/d/scratch/millionAsBinary", "r");
+    fp = fopen(FILE_PATH, "r");
     fread(newHeader, sizeof(struct header), 1, fp);
     printf("Reading from Disk\n");
     printf("%lu %llu\n", newHeader->numVertices, newHeader->numEdges);

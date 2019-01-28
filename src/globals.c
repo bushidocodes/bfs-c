@@ -2,6 +2,8 @@
 #include "aml.h"
 #include "queue.c"
 
+#define FILE_PATH "./res/graph"
+
 typedef struct edge
 {
     unsigned long destination; /* destination vertex of edge a.k.a an adjascent vertex */
@@ -69,12 +71,13 @@ void createGlobals()
     aml_register_handler(edgerecordHandler, 2);
     aml_register_handler(findneighborsHandler, 3);
     aml_register_handler(processneighborHandler, 4);
-    aml_register_handler(rotateQueuesHandler, 5);
-};
-
+}
 void cleanGlobals()
 {
-    //TODO
+    printf("Clean globals...");
+    free(g);
+    free(current_queue);
+    free(next_queue);
 }
 
 void edgerecordHandler(int from, void *data, int sz)
@@ -88,7 +91,6 @@ void findneighborsHandler(int from, void *data, int sz)
 {
     edgerecord *record = data;
     printf("%d %lu\n", processId, record->source);
-    unsigned long adjacentVertex;
     edge *edgeLinkedList;
     edgeLinkedList = g->edges[record->source];
     while (edgeLinkedList != NULL)
@@ -170,7 +172,7 @@ void processneighborHandler(int from, void *data, int sz)
         is_discovered[record->destination] = true;
         has_parent[record->destination] = record->source;
     }
-};
+}
 
 void read_graph()
 {
@@ -184,7 +186,7 @@ void read_graph()
     {
         header *newHeader = malloc(sizeof(header));
         newEdgerecord = malloc(sizeof(edgerecord));
-        fp = fopen("/d/scratch/millionAsBinary", "r");
+        fp = fopen(FILE_PATH, "r");
         fread(newHeader, sizeof(struct header), 1, fp);
         for (int i = 0; i < noProcesses; i++)
         {
@@ -194,7 +196,7 @@ void read_graph()
         free(newHeader);
     }
     aml_barrier();
-    printf("%d has %lu\n", processId, g->number_edges);
+    printf("%d has %llu\n", processId, g->number_edges);
     if (processId == 0)
     {
         printf("Reading from Disk\n");
@@ -210,13 +212,4 @@ void read_graph()
         free(newEdgerecord);
     }
     aml_barrier();
-}
-
-void rotateQueuesHandler(int from, void *data, int sz)
-{
-    printf("%d Flipping queues\n", processId);
-    temp = current_queue;
-    current_queue = next_queue;
-    reset(temp, false);
-    next_queue = temp;
 }
