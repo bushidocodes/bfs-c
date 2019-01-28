@@ -32,11 +32,10 @@ typedef struct edgerecord
 // Globals
 int noProcesses, processId;
 graph *g;
-queue *next_queue;
+queue *current_queue, *temp, *next_queue;
 bool is_discovered[MAXV + 1];
 int has_parent[MAXV + 1];
 
-void bfsHandler(int from, void *data, int sz);
 void createGlobals();
 void cleanGlobals();
 void edgerecordHandler(int from, void *data, int sz);
@@ -48,50 +47,7 @@ void print_graph(graph *g);
 void processneighborHandler(int from, void *data, int sz);
 void read_graph();
 void read_graph_stdin(graph *g, bool is_directed);
-
-void bfsHandler(int from, void *data, int sz)
-{
-    unsigned long *start = data;
-    printf("%d sees start of %lu\n", processId, *start);
-    int vertex;
-
-    // Initialize queue
-    queue *current_queue, *temp;
-    current_queue = malloc(sizeof(queue));
-    reset(current_queue, false);
-
-    // And set to discovered
-    printf("Length of queue is %lu\n", len(current_queue));
-    enqueue(*start, current_queue);
-    printf("Length of queue is %lu\n", len(current_queue));
-    is_discovered[*start] = true;
-    // And set self as parent
-    has_parent[*start] = *start;
-
-    while (len(current_queue) > 0)
-    {
-        vertex = dequeue(current_queue);
-        printf("%d dequeued %lu\n", processId, vertex);
-        // send AML
-        edgerecord *record = malloc(sizeof(edgerecord));
-        record->source = vertex;
-        aml_send(record, 3, sizeof(edgerecord), vertex % noProcesses); /* findNeighborsHandler */
-
-        if (len(current_queue) == 0)
-        {
-            aml_barrier();
-            // Once the current queue is empty, join together next_queue and then rotate out levels
-            if (len(next_queue) > 0)
-            {
-                temp = current_queue;
-                current_queue = next_queue;
-                reset(temp, false);
-                next_queue = temp;
-            }
-        }
-    }
-    // Combine has_parent
-};
+void rotateQueuesHandler(int from, void *data, int sz);
 
 void createGlobals()
 {
@@ -102,8 +58,9 @@ void createGlobals()
     g = malloc(sizeof(graph));
     initialize_graph(g, false);
 
-    /* Create Next Queue */
-
+    /* Create Queues */
+    current_queue = malloc(sizeof(queue));
+    reset(current_queue, false);
     next_queue = malloc(sizeof(queue));
     reset(next_queue, false);
 
@@ -112,7 +69,7 @@ void createGlobals()
     aml_register_handler(edgerecordHandler, 2);
     aml_register_handler(findneighborsHandler, 3);
     aml_register_handler(processneighborHandler, 4);
-    aml_register_handler(bfsHandler, 5);
+    aml_register_handler(rotateQueuesHandler, 5);
 };
 
 void cleanGlobals()
@@ -137,7 +94,6 @@ void findneighborsHandler(int from, void *data, int sz)
     while (edgeLinkedList != NULL)
     {
         record->destination = edgeLinkedList->destination;
-        printf("Are these equal? %lu %lu\n", record->destination, edgeLinkedList->destination);
         aml_send(record, 4, sizeof(edgerecord), record->destination % noProcesses); /* processneighborHandler */
         edgeLinkedList = edgeLinkedList->next;
     }
@@ -254,4 +210,13 @@ void read_graph()
         free(newEdgerecord);
     }
     aml_barrier();
+}
+
+void rotateQueuesHandler(int from, void *data, int sz)
+{
+    printf("%d Flipping queues\n", processId);
+    temp = current_queue;
+    current_queue = next_queue;
+    reset(temp, false);
+    next_queue = temp;
 }
