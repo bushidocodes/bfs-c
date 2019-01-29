@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
             // I suspect I might might need to add some retries and sleeps here because aml_barrier does not seem to be working above as I otherwise would expect
         }
     }
-    // If this were working properly, I would need to reduce the
+    // If this were working properly, I would need to reduce the has_parents data structure
     printf("%d END\n", processId);
     cleanGlobals();
     // aml_finalize(); //includes MPI_Finalize()... This hangs inexplicably...
