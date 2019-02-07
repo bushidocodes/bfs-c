@@ -46,16 +46,16 @@ int main(int argc, char *argv[])
     newHeader->numEdges = newHeader->numVertices * edgeFactor;
 
     printf("Scale of %d yields %lu vertices\n", scale, newHeader->numVertices);
-    printf("Edge Factor of %d yields %llu edges\n", edgeFactor, newHeader->numEdges);
+    printf("Edge Factor of %d yields %lu edges\n", edgeFactor, newHeader->numEdges);
     // Writing Edge List Header to Text file
-    fprintf(fp, "%lu %llu\n", newHeader->numVertices, newHeader->numEdges);
+    fprintf(fp, "%lu %lu\n", newHeader->numVertices, newHeader->numEdges);
 
     // Write the header record to a binary file
     // fwrite(newHeader, sizeof(struct header), 1, fp);
     srand(time(0));
     for (long long int i = 1; i <= newHeader->numEdges; i++)
     {
-        printf("Writing %llu / %llu\n", i, newHeader->numEdges);
+        // printf("Writing %lu / %lu\n", i, newHeader->numEdges);
         newEdgerecord->source = rand_uint64() % newHeader->numVertices;
         newEdgerecord->destination = rand_uint64() % newHeader->numVertices;
         // Write the edge record to a text file
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     newHeader->numEdges = 0;
     newHeader->numVertices = 0;
     printf("Proving that state is wiped\n");
-    printf("%lu %llu\n", newHeader->numVertices, newHeader->numEdges);
+    printf("%lu %lu\n", newHeader->numVertices, newHeader->numEdges);
 
     // Now Re-open to Read
     // fp = fopen(FILE_PATH, "r");

@@ -24,7 +24,7 @@ void initialize_search(graph *g)
     for (uint64_t i = 1; i <= g->number_vertices; i++)
     {
         is_processed[i] = is_discovered[i] = false;
-        has_parent[-i] = -1;
+        has_parent[i] = -1;
     }
 }
 
@@ -40,7 +40,7 @@ void bfs(graph *g, uint64_t start)
     reset(q, false);
 
     // Add start to queue
-    printf("Generated Root Vertex %lu\n", start);
+    // printf("Generated Root Vertex %lu\n", start);
     enqueue(start, q);
 
     // And set to discovered
