@@ -1,7 +1,9 @@
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
+
 #include "bfs.c"
 
 int main()
@@ -18,7 +20,7 @@ int main()
 
     // Get a random vertex from the graph
     srand(time(0));
-    int start = rand() % (g->number_vertices - 1);
+    uint64_t start = rand() % (g->number_vertices - 1);
 
     // Initiate BFS
     bfs(g, start);

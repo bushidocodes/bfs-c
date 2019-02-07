@@ -3,18 +3,32 @@
 ## Define compiler and flags
 CC=cc 
 CXX=cc 
-CCFLAGS=-g -std=c99 -Wall -Werror -lpthread
+CCFLAGS=-g -std=c99 -Wall -lpthread -lm
 
 all: build
+
+makeres:
+	mkdir -p res
 
 makedist:
 	mkdir -p dist
 
-build: makedist
-	$(CC) ./src/main.c -o ./dist/a.out $(CCFLAGS)
+build-generator: makedist
+	$(CC) ./src/generategraph.c -o ./dist/generategraph.out $(CCFLAGS)
 
-run: build
-	cat ./res/data.txt | ./dist/a.out
+build-bfs: makedist
+	$(CC) ./src/main.c -o ./dist/bfs.out $(CCFLAGS)
+
+build: build-bfs
+
+run-generator: build-generator makeres
+	./dist/generategraph.out 8 16
+
+run-bfs: build-bfs
+	# mpirun -n 2 ./dist/bfs.out --mca orte_base_help_aggregate 0
+	cat ./res/data.txt | ./dist/bfs.out
+
+run: run-generator run-bfs
 
 clean: 
 	rm -f ./dist/*

@@ -6,33 +6,33 @@
 #include "graph.c"
 #include "queue.c"
 
-void process_vertex_early(int vertex);
-void process_vertex_late(int vertex);
-void process_edge(int source, int destination);
+void process_vertex_early(uint64_t vertex);
+void process_vertex_late(uint64_t vertex);
+void process_edge(uint64_t source, uint64_t destination);
 void initialize_search(graph *g);
-void bfs(graph *g, int start);
+void bfs(graph *g, uint64_t start);
 
 /* BFS Stuff */
 
 bool is_processed[MAXV + 1];
 bool is_discovered[MAXV + 1];
-int has_parent[MAXV + 1];
+uint64_t has_parent[MAXV + 1];
 
 /* Initialize our data structures */
 void initialize_search(graph *g)
 {
-    for (int i = 1; i <= g->number_vertices; i++)
+    for (uint64_t i = 1; i <= g->number_vertices; i++)
     {
         is_processed[i] = is_discovered[i] = false;
         has_parent[-i] = -1;
     }
 }
 
-void bfs(graph *g, int start)
+void bfs(graph *g, uint64_t start)
 {
     queue *q;
-    int vertex;
-    int adjacentVertex;
+    uint64_t vertex;
+    uint64_t adjacentVertex;
     edge *edgeLinkedList;
 
     // Initialize queue
@@ -40,7 +40,7 @@ void bfs(graph *g, int start)
     reset(q, false);
 
     // Add start to queue
-    printf("Generated Root Vertex %d\n", start);
+    printf("Generated Root Vertex %lu\n", start);
     enqueue(start, q);
 
     // And set to discovered
@@ -69,22 +69,22 @@ void bfs(graph *g, int start)
 
 /* Use recursion to reverse the ancestry chain defined by the has_parent data structures to find the shortest path */
 
-void find_path(int start, int end, int parents[])
+void find_path(uint64_t start, uint64_t end, uint64_t parents[])
 {
     /* Base Case: Roots are either expressed by being their own parent or being -1 depending on the graph implementation */
     if ((start == end) || (end == -1))
-        printf("\n%d", start);
+        printf("\n%lu", start);
     else
     {
         find_path(start, has_parent[end], has_parent);
-        printf(" %d", end);
+        printf(" %lu", end);
     }
 }
 
 void print_parents(graph *g)
 {
-    for (int i = 0; i < g->number_vertices; i++)
+    for (uint64_t i = 0; i < g->number_vertices; i++)
     {
-        printf("%d has parent %d\n", i, has_parent[i]);
+        printf("%lu has parent %lu\n", i, has_parent[i]);
     }
 }
