@@ -14,7 +14,6 @@ void bfs(graph *g, uint64_t start);
 
 /* BFS Stuff */
 
-bool is_processed[MAXV + 1];
 bool is_discovered[MAXV + 1];
 uint64_t has_parent[MAXV + 1];
 
@@ -23,7 +22,7 @@ void initialize_search(graph *g)
 {
     for (uint64_t i = 1; i <= g->number_vertices; i++)
     {
-        is_processed[i] = is_discovered[i] = false;
+        is_discovered[i] = false;
         has_parent[i] = -1;
     }
 }
@@ -51,11 +50,13 @@ void bfs(graph *g, uint64_t start)
     while (len(q) > 0)
     {
         vertex = dequeue(q);
-        is_processed[vertex] = true;
+        // I need to change this to an adjacency matrix...
+        // use OpenMP For
         edgeLinkedList = g->edges[vertex];
         while (edgeLinkedList != NULL)
         {
             adjacentVertex = edgeLinkedList->destination;
+            // and then I need to make 60 - 65 atomic...
             if (is_discovered[adjacentVertex] == false)
             {
                 enqueue(adjacentVertex, q);
