@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include "constants.h"
@@ -21,26 +22,30 @@ typedef struct edgerecord
 int main(int argc, char *argv[])
 {
     unsigned int edgeFactor, scale;
+    char filePath[100] = FILE_PATH;
+
     header *newHeader;
     edgerecord *newEdgerecord;
     FILE *fp;
 
+    printf("You entered %d arguments\n", argc - 1);
     if (argc == 1)
     {
         printf("You are missing the required scale integer\n");
         printf("This command takes the arguments generategraph SCALE EDGEFACTOR\n");
         exit(-1);
     }
+    scale = atoi(argv[1]);
+    edgeFactor = (argc == 3) ? atoi(argv[2]) : 16;
+    if (argc == 4)
+    {
+        strncpy(&filePath, argv[3], 100);
+        printf("Writing Edgelist to %s\n", filePath);
+    }
 
     newHeader = malloc(sizeof(header));
     newEdgerecord = malloc(sizeof(edgerecord));
-    fp = fopen(FILE_PATH, "w");
-
-    edgeFactor = (argc == 3) ? atoi(argv[2]) : 16;
-
-    printf("You entered %d arguments\n", argc - 1);
-
-    scale = atoi(argv[1]);
+    fp = fopen(filePath, "w");
 
     newHeader->numVertices = pow(2.0, scale);
     newHeader->numEdges = newHeader->numVertices * edgeFactor;

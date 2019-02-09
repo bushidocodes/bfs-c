@@ -22,11 +22,17 @@ build-bfs: makedist
 build: build-bfs
 
 run-generator: build-generator makeres
-	./dist/generategraph.out 16 16
+	./dist/generategraph.out 5 4 ./res/5x4_edgelist.txt
+	./dist/generategraph.out 6 16 ./res/6x16_edgelist.txt
+	./dist/generategraph.out 16 16 ./res/16x16_edgelist.txt
+	# ./dist/generategraph.out 26 16 ./res/26x16_edgelist.txt
 
 run-bfs: build-bfs
 	# mpirun -n 2 ./dist/bfs.out --mca orte_base_help_aggregate 0
-	cat ./res/data.txt | ./dist/bfs.out
+	cat ./res/5x4_edgelist.txt | ./dist/bfs.out > ./res/5x4_results.txt
+	cat ./res/6x16_edgelist.txt | ./dist/bfs.out > ./res/6x16_results.txt
+	cat ./res/16x16_edgelist.txt | ./dist/bfs.out > ./res/16x16_results.txt
+	# cat ./res/26x16_edgelist.txt | ./dist/bfs.out > ./res/26x16_results.txt
 
 run: run-generator run-bfs
 
