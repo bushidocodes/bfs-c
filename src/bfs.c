@@ -14,30 +14,38 @@ void bfs(graph *g, uint64_t start, uint64_t has_parent[MAXV + 1]);
 
 void bfs(graph *g, uint64_t start, uint64_t has_parent[MAXV + 1])
 {
-    uint8_t level[MAXV] = {UINT8_MAX};
+    uint8_t level[MAXV + 1];
+    memset(level, UINT8_MAX, (MAXV + 1) * sizeof(uint8_t));
     uint8_t current_level = 0;
-    uint64_t neighbor_count, neighbor_count1 = 0;
+    uint64_t neighbor_count = 0;
+    bool should_advance = true;
 
     // And set self as parent
     has_parent[start] = start;
     level[start] = 0;
-#pragma omp parallel for
-    for (uint64_t current_vertex = 1; current_vertex < g->number_vertices; current_vertex++)
+    // #pragma omp parallel for
+    while (should_advance)
     {
-        if (level[current_vertex] == current_level)
+        should_advance = false;
+        for (uint64_t current_vertex = 1; current_vertex < g->number_vertices; current_vertex++)
         {
-            uint64_t neighbors[MAXV] = {UINT64_C(0)};
-            neighbor_count = getNeighbors(g, current_vertex, neighbors);
-
-            for (uint64_t i = 0; i < neighbor_count; i++)
+            if (level[current_vertex] == current_level)
             {
-                if (level[i] == UINT8_MAX)
+                uint64_t neighbors[MAXV] = {UINT64_C(0)};
+                neighbor_count = getNeighbors(g, current_vertex, neighbors);
+
+                for (uint64_t i = 0; i < neighbor_count; i++)
                 {
-                    level[i] = current_level + 1;
-                    has_parent[i] = current_vertex;
+                    if (level[neighbors[i]] == UINT8_MAX)
+                    {
+                        should_advance = true;
+                        level[neighbors[i]] = current_level + 1;
+                        has_parent[neighbors[i]] = current_vertex;
+                    }
                 }
             }
         }
+        current_level++;
     }
 }
 

@@ -4,15 +4,22 @@
 #include <stdbool.h>
 #include <string.h>
 #include "constants.h"
-#include "bitarray.c"
+
+// This edge struct acts as a linked list node
+typedef struct edge
+{
+    uint64_t destination; /* destination vertex of edge a.k.a an adjascent vertex */
+    uint64_t weight;      /* edge weight */
+    struct edge *next;    /* next edge in list... I have to use the struct keyboard because this is recursive */
+} edge;
 
 typedef struct graph
 {
-    word_t edges[MAXV + 1][(MAXV + 1) / sizeof(word_t)]; /* adjacency matrix represented by array of bit arrays */
-    uint64_t degree[MAXV + 1];                           /* outdegree of each vertex */
-    uint64_t number_vertices;                            /* number of vertices in graph */
-    uint64_t number_edges;                               /* number of edges in graph */
-    bool is_directed;                                    /* Is the graph directed */
+    edge *edges[MAXV + 1];     /* Intermediate Linked List Representation before CSR Conversion */
+    uint64_t degree[MAXV + 1]; /* outdegree of each vertex */
+    uint64_t number_vertices;  /* number of vertices in graph */
+    uint64_t number_edges;     /* number of edges in graph */
+    bool is_directed;          /* Is the graph directed */
 } graph;
 
 void initialize_graph(graph *g, bool directed);
@@ -31,7 +38,10 @@ uint64_t getDegree(graph *g, uint64_t vertex)
 
 void initialize_graph(graph *g, bool directed)
 {
-    memset(g->edges, 0, (MAXV + 1) * ((MAXV + 1) / 8));
+    for (uint64_t i = 1; i < MAXV; i++)
+    {
+        g->edges[i] = NULL;
+    }
     memset(g->degree, 0, (MAXV + 1) * sizeof(uint64_t));
     g->number_vertices = 0;
     g->number_edges = 0;
@@ -56,22 +66,21 @@ void read_graph(graph *g, bool is_directed)
 // Inserts an edge from source to destination in the adjascency list of graph g. If the edge is not directed, it adds source -> destination and destination -> but only increments th edge count once.
 void insert_edge(graph *g, uint64_t source, uint64_t destination, bool is_directed)
 {
-    // Make sure this isn't a redundant edge
-    if (get_bit(g->edges[source], destination) != true)
-    {
-        set_bit(g->edges[source], destination);
-        g->degree[source]++;
+    edge *new_edge = malloc(sizeof(edge)); /* temporary pointer */
+    new_edge->destination = destination;
+    new_edge->next = g->edges[source];
+    g->edges[source] = new_edge;
+    g->degree[source]++;
 
-        if (is_directed == false)
-        {
-            // We set direted to true in this call so we don't infinitely loop
-            insert_edge(g, destination, source, true);
-        }
-        else
-        {
-            // By incrementing in this else block, we only increment one for undirected graphs
-            g->number_edges++;
-        }
+    if (is_directed == false)
+    {
+        // We set direted to true in this call so we don't infinitely loop
+        insert_edge(g, destination, source, true);
+    }
+    else
+    {
+        // By incrementing in this else block, we only increment one for undirected graphs
+        g->number_edges++;
     }
 }
 
@@ -79,28 +88,26 @@ void insert_edge(graph *g, uint64_t source, uint64_t destination, bool is_direct
 uint64_t getNeighbors(graph *g, uint64_t source, uint64_t results[])
 {
     uint64_t results_length = 0;
-    for (uint64_t destination = 1; destination <= g->number_vertices; destination++)
+    for (edge *currentEdge = g->edges[source]; currentEdge->next != NULL; currentEdge = currentEdge->next)
     {
-        if (get_bit(g->edges[source], destination) == true)
-        {
-            results[results_length] = destination;
-            results_length++;
-        }
+        results[results_length] = currentEdge->destination;
+        results_length++;
     }
     return results_length;
 }
 
 void print_graph(graph *g)
 {
+    edge *p; /* temporary pointer */
+
     for (uint64_t i = 1; i <= g->number_vertices; i++)
     {
         printf("%lu: ", i);
-        for (uint64_t j = 1; j <= g->number_vertices; j++)
+        p = g->edges[i];
+        while (p != NULL)
         {
-            if (get_bit(g->edges[i], j))
-            {
-                printf("%lu, ", j);
-            }
+            printf(" %lu", p->destination);
+            p = p->next;
         }
         printf("\n");
     }
