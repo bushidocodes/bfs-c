@@ -23,15 +23,14 @@ void print_graph(graph *g);
 uint64_t getDegree(graph *g, uint64_t vertex);
 uint64_t getNeighbors(graph *g, uint64_t source, uint64_t results[]);
 
+// TODO: Figure out why the result of this function differs from the count returned by getNeighbors
 uint64_t getDegree(graph *g, uint64_t vertex)
 {
     return g->degree[vertex];
 }
 
-// This initialization takes a while because the matrix is huge
 void initialize_graph(graph *g, bool directed)
 {
-    // Using memset to zero out an array
     memset(g->edges, 0, (MAXV + 1) * ((MAXV + 1) / 8));
     memset(g->degree, 0, (MAXV + 1) * sizeof(uint64_t));
     g->number_vertices = 0;
@@ -57,17 +56,22 @@ void read_graph(graph *g, bool is_directed)
 // Inserts an edge from source to destination in the adjascency list of graph g. If the edge is not directed, it adds source -> destination and destination -> but only increments th edge count once.
 void insert_edge(graph *g, uint64_t source, uint64_t destination, bool is_directed)
 {
-    set_bit(g->edges[source], destination);
+    // Make sure this isn't a redundant edge
+    if (get_bit(g->edges[source], destination) != true)
+    {
+        set_bit(g->edges[source], destination);
+        g->degree[source]++;
 
-    if (is_directed == false)
-    {
-        // We set direted to true in this call so we don't infinitely loop
-        insert_edge(g, destination, source, true);
-    }
-    else
-    {
-        // By incrementing in this else block, we only increment one for undirected graphs
-        g->number_edges++;
+        if (is_directed == false)
+        {
+            // We set direted to true in this call so we don't infinitely loop
+            insert_edge(g, destination, source, true);
+        }
+        else
+        {
+            // By incrementing in this else block, we only increment one for undirected graphs
+            g->number_edges++;
+        }
     }
 }
 
