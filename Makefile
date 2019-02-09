@@ -3,7 +3,7 @@
 ## Define compiler and flags
 CC=gcc 
 CXX=gcc 
-CCFLAGS=-g -std=c11 -Wall -fopenmp -lpthread -lm -lrt
+CCFLAGS= -std=c11 -Wall -fopenmp 
 
 all: build
 
