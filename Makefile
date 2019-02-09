@@ -1,9 +1,9 @@
 ## Simple C Makefile
 
 ## Define compiler and flags
-CC=cc 
-CXX=cc 
-CCFLAGS=-g -std=c99 -Wall -lpthread -lm
+CC=gcc 
+CXX=gcc 
+CCFLAGS=-g -std=c99 -Wall -fopenmp -lpthread -lm
 
 all: build
 

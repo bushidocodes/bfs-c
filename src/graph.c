@@ -2,6 +2,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
+#include "constants.h"
+#include "bitarray.c"
 
 /**
  * Basic Graph Data Structure that uses Adjacency lists
@@ -11,22 +14,13 @@
  * The resulting graph is printed to console 
  **/
 
-// This edge struct acts as a linked list node
-typedef struct edge
-{
-    uint64_t destination; /* destination vertex of edge a.k.a an adjascent vertex */
-    uint64_t weight;      /* edge weight */
-    struct edge *next;    /* next edge in list... I have to use the struct keyboard because this is recursive */
-} edge;
-
-// Our adjacency list is an array of linked lists called edges. The index of the edges array represents the id of the
 typedef struct graph
 {
-    edge *edges[MAXV + 1];     /* adjacency info */
-    uint64_t degree[MAXV + 1]; /* outdegree of each vertex */
-    uint64_t number_vertices;  /* number of vertices in graph */
-    uint64_t number_edges;     /* number of edges in graph */
-    bool is_directed;          /* Is the graph directed */
+    word_t edges[MAXV + 1][(MAXV + 1) / sizeof(word_t)]; /* adjacency matrix represented by array of bit arrays */
+    uint64_t degree[MAXV + 1];                           /* outdegree of each vertex */
+    uint64_t number_vertices;                            /* number of vertices in graph */
+    uint64_t number_edges;                               /* number of edges in graph */
+    bool is_directed;                                    /* Is the graph directed */
 } graph;
 
 void initialize_graph(graph *g, bool directed);
@@ -34,46 +28,44 @@ void read_graph(graph *g, bool directed);
 void insert_edge(graph *g, uint64_t x, uint64_t y, bool directed);
 void print_graph(graph *g);
 
+uint64_t getDegree(graph *g, uint64_t vertex);
+uint64_t getNeighbors(graph *g, uint64_t source, uint64_t results[]);
+
+uint64_t getDegree(graph *g, uint64_t vertex)
+{
+    return g->degree[vertex];
+}
+
+// This initialization takes a while because the matrix is huge
 void initialize_graph(graph *g, bool directed)
 {
-    for (uint64_t i = 1; i < MAXV; i++)
-    {
-        g->edges[i] = NULL;
-        g->degree[i] = 0;
-    }
+    // Using memset to zero out an array
+    memset(g->edges, 0, (MAXV + 1) * ((MAXV + 1) / 8));
+    memset(g->degree, 0, (MAXV + 1) * sizeof(uint64_t));
     g->number_vertices = 0;
     g->number_edges = 0;
     g->is_directed = directed;
+    printf("Graph Initialization complete\n");
 }
 
 void read_graph(graph *g, bool is_directed)
 {
-    uint64_t m;    /* number of edges */
-    uint64_t x, y; /* vertices in edge (x, y) */
+    uint64_t edge_count;          /* number of edges */
+    uint64_t source, destination; /* vertices in edge (source, destination) */
 
-    initialize_graph(g, is_directed);
+    scanf("%lu %lu", &(g->number_vertices), &edge_count);
 
-    scanf("%lu %lu", &(g->number_vertices), &m);
-
-    for (uint64_t i = 1; i <= m; i++)
+    for (uint64_t i = 1; i <= edge_count; i++)
     {
-        scanf("%lu %lu", &x, &y);
-        insert_edge(g, x, y, is_directed);
+        scanf("%lu %lu", &source, &destination);
+        insert_edge(g, source, destination, is_directed);
     }
 }
 
-// Inserts an edge from source to destination in the adjascency list of graph g. If the edge is not directed, it adds source -> destination and destination -> but only increments th edge count once. Interestingly, weight is not yet implemented. This function would likely need to be modified to support weights on our edges
+// Inserts an edge from source to destination in the adjascency list of graph g. If the edge is not directed, it adds source -> destination and destination -> but only increments th edge count once.
 void insert_edge(graph *g, uint64_t source, uint64_t destination, bool is_directed)
 {
-    edge *new_edge;                  /* temporary pointer */
-    new_edge = malloc(sizeof(edge)); /* allocate edge storage */
-
-    new_edge->weight = 1;
-    new_edge->destination = destination;
-    new_edge->next = g->edges[source];
-
-    g->edges[source] = new_edge;
-    g->degree[source]++;
+    set_bit(g->edges[source], destination);
 
     if (is_directed == false)
     {
@@ -87,18 +79,32 @@ void insert_edge(graph *g, uint64_t source, uint64_t destination, bool is_direct
     }
 }
 
+// Takes a pointer to an array, returns the length of the array
+uint64_t getNeighbors(graph *g, uint64_t source, uint64_t results[])
+{
+    uint64_t results_length = 0;
+    for (uint64_t destination = 1; destination <= g->number_vertices; destination++)
+    {
+        if (get_bit(g->edges[source], destination) == true)
+        {
+            results[results_length] = destination;
+            results_length++;
+        }
+    }
+    return results_length;
+}
+
 void print_graph(graph *g)
 {
-    edge *p; /* temporary pointer */
-
-    for (uint64_t i = 1; i <= g->number_vertices; i++)
+    for (uint64_t i = 1; i <= g->number_vertices; i++) // TODO: Why is this numbered from 1???
     {
         printf("%lu: ", i);
-        p = g->edges[i];
-        while (p != NULL)
+        for (uint64_t j = 1; j <= g->number_vertices; j++)
         {
-            printf(" %lu", p->destination);
-            p = p->next;
+            if (get_bit(g->edges[i], j))
+            {
+                printf("%lu, ", j);
+            }
         }
         printf("\n");
     }

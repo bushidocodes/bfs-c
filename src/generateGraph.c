@@ -51,17 +51,13 @@ int main(int argc, char *argv[])
     fprintf(fp, "%lu %lu\n", newHeader->numVertices, newHeader->numEdges);
 
     // Write the header record to a binary file
-    // fwrite(newHeader, sizeof(struct header), 1, fp);
     srand(time(0));
-    for (long long int i = 1; i <= newHeader->numEdges; i++)
+    for (uint64_t i = 1; i <= newHeader->numEdges; i++)
     {
-        // printf("Writing %lu / %lu\n", i, newHeader->numEdges);
-        newEdgerecord->source = rand_uint64() % newHeader->numVertices;
-        newEdgerecord->destination = rand_uint64() % newHeader->numVertices;
+        newEdgerecord->source = (rand_uint64() % newHeader->numVertices) + 1;
+        newEdgerecord->destination = (rand_uint64() % newHeader->numVertices) + 1;
         // Write the edge record to a text file
         fprintf(fp, "%lu %lu\n", newEdgerecord->source, newEdgerecord->destination);
-        // Write the edge record to a binary file
-        // fwrite(newEdgerecord, sizeof(struct edgerecord), 1, fp);
     }
 
     // Calculate number of nodes: 2^(scale int)
@@ -72,40 +68,6 @@ int main(int argc, char *argv[])
     // Write the lines out at a time to STDOUT
     // This allows us to pipe either to a file or another process
     fclose(fp);
-
-    newHeader->numEdges = 0;
-    newHeader->numVertices = 0;
-    printf("Proving that state is wiped\n");
-    printf("%lu %lu\n", newHeader->numVertices, newHeader->numEdges);
-
-    // Now Re-open to Read
-    // fp = fopen(FILE_PATH, "r");
-    // fread(newHeader, sizeof(struct header), 1, fp);
-    // printf("Reading from Disk\n");
-    // printf("%lu %llu\n", newHeader->numVertices, newHeader->numEdges);
-    // for (long long int i = 1; i <= newHeader->numEdges; i++)
-    // {
-    //     printf("Reading %llu / %llu\n", i, newHeader->numEdges);
-    //     fread(newEdgerecord, sizeof(struct edgerecord), 1, fp);
-    //     printf("%lu %lu\n", newEdgerecord->source, newEdgerecord->destination);
-    // }
-
     free(newHeader);
     free(newEdgerecord);
 }
-
-// void write_graph(graph *g, bool is_directed)
-// {
-//     int m;    /* number of edges */
-//     int x, y; /* vertices in edge (x, y) */
-
-//     initialize_graph(g, is_directed);
-
-//     scanf("%d %d", &(g->number_vertices), &m);
-
-//     for (int i = 1; i <= m; i++)
-//     {
-//         scanf("%d %d", &x, &y);
-//         insert_edge(g, x, y, is_directed);
-//     }
-// }
