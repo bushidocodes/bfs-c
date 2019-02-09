@@ -7,27 +7,10 @@
 #include "graph.c"
 #include "queue.c"
 
-void process_vertex_early(uint64_t vertex);
-void process_vertex_late(uint64_t vertex);
-void process_edge(uint64_t source, uint64_t destination);
-void initialize_search(graph *g);
-void bfs(graph *g, uint64_t start);
+// void initialize_search(graph *g);
+void bfs(graph *g, uint64_t start, bool is_discovered[MAXV + 1], uint64_t has_parent[MAXV + 1]);
 
-/* BFS Stuff */
-bool is_discovered[MAXV + 1];
-uint64_t has_parent[MAXV + 1];
-
-/* Initialize our data structures */
-void initialize_search(graph *g)
-{
-    for (uint64_t i = 1; i <= g->number_vertices; i++)
-    {
-        is_discovered[i] = false;
-        has_parent[i] = 0;
-    }
-}
-
-void bfs(graph *g, uint64_t start)
+void bfs(graph *g, uint64_t start, bool is_discovered[MAXV + 1], uint64_t has_parent[MAXV + 1])
 {
     queue *q;
     uint64_t vertex;
@@ -64,21 +47,7 @@ void bfs(graph *g, uint64_t start)
     }
 }
 
-/* Use recursion to reverse the ancestry chain defined by the has_parent data structures to find the shortest path */
-
-void find_path(uint64_t start, uint64_t end, uint64_t parents[])
-{
-    /* Base Case: Roots are either expressed by being their own parent or being -1 depending on the graph implementation */
-    if ((start == end) || (end == -1))
-        printf("\n%lu", start);
-    else
-    {
-        find_path(start, has_parent[end], has_parent);
-        printf(" %lu", end);
-    }
-}
-
-void print_parents(graph *g)
+void print_parents(graph *g, uint64_t has_parent[MAXV + 1])
 {
     for (uint64_t i = 1; i <= g->number_vertices; i++)
     {

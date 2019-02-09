@@ -6,14 +6,6 @@
 #include "constants.h"
 #include "bitarray.c"
 
-/**
- * Basic Graph Data Structure that uses Adjacency lists
- * Main parses text from STDIN. 
- * The two digits on the first line are number of nodes and number of edges
- * Each following line include two vertices forming an edge
- * The resulting graph is printed to console 
- **/
-
 typedef struct graph
 {
     word_t edges[MAXV + 1][(MAXV + 1) / sizeof(word_t)]; /* adjacency matrix represented by array of bit arrays */
@@ -96,7 +88,7 @@ uint64_t getNeighbors(graph *g, uint64_t source, uint64_t results[])
 
 void print_graph(graph *g)
 {
-    for (uint64_t i = 1; i <= g->number_vertices; i++) // TODO: Why is this numbered from 1???
+    for (uint64_t i = 1; i <= g->number_vertices; i++)
     {
         printf("%lu: ", i);
         for (uint64_t j = 1; j <= g->number_vertices; j++)
