@@ -17,11 +17,14 @@ int main()
 
     /* Feed in graph data from STDIN */
     read_graph(g, false);
+    printf("Reading Graph from STDIN complete\n");
 
     /* Print the contents of the graph if desired */
     // print_graph(g);
+    printf("Starting Tests\n");
     for (int i = 0; i < TEST_RUNS; i++)
     {
+        printf("Running test %d out of %d\n", i, TEST_RUNS);
         initialize_search(g);
         // Get a random vertex from the graph
         gettimeofday(&startTime, NULL);

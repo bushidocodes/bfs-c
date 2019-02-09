@@ -22,7 +22,7 @@ build-bfs: makedist
 build: build-bfs
 
 run-generator: build-generator makeres
-	./dist/generategraph.out 8 16
+	./dist/generategraph.out 16 16
 
 run-bfs: build-bfs
 	# mpirun -n 2 ./dist/bfs.out --mca orte_base_help_aggregate 0
