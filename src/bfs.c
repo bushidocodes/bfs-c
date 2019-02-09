@@ -1,47 +1,41 @@
 #include <limits.h>
+#include <omp.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "constants.h"
 #include "graph.c"
 #include "queue.c"
 
 // void initialize_search(graph *g);
-void bfs(graph *g, uint64_t start, bool is_discovered[MAXV + 1], uint64_t has_parent[MAXV + 1]);
+void bfs(graph *g, uint64_t start, uint64_t has_parent[MAXV + 1]);
 
-void bfs(graph *g, uint64_t start, bool is_discovered[MAXV + 1], uint64_t has_parent[MAXV + 1])
+void bfs(graph *g, uint64_t start, uint64_t has_parent[MAXV + 1])
 {
-    queue *q;
-    uint64_t vertex;
-    uint64_t neighbor_count = 0;
+    uint8_t level[MAXV] = {UINT8_MAX};
+    uint8_t current_level = 0;
+    uint64_t neighbor_count, neighbor_count1 = 0;
 
-    // Initialize queue
-    q = malloc(sizeof(queue));
-    reset(q, false);
-
-    // Add start to queue
-    enqueue(start, q);
-
-    // And set to discovered
-    is_discovered[start] = true;
     // And set self as parent
     has_parent[start] = start;
-
-    while (len(q) > 0)
+    level[start] = 0;
+#pragma omp parallel for
+    for (uint64_t current_vertex = 1; current_vertex < g->number_vertices; current_vertex++)
     {
-        vertex = dequeue(q);
-        uint64_t neighbors[MAXV] = {UINT64_C(0)};
-        neighbor_count = getNeighbors(g, vertex, neighbors);
-
-        for (uint64_t i = 0; i < neighbor_count; i++)
+        if (level[current_vertex] == current_level)
         {
-            // and then I need to make 60 - 65 atomic...
-            if (is_discovered[neighbors[i]] == false)
+            uint64_t neighbors[MAXV] = {UINT64_C(0)};
+            neighbor_count = getNeighbors(g, current_vertex, neighbors);
+
+            for (uint64_t i = 0; i < neighbor_count; i++)
             {
-                enqueue(neighbors[i], q);
-                is_discovered[neighbors[i]] = true;
-                has_parent[neighbors[i]] = vertex;
+                if (level[i] == UINT8_MAX)
+                {
+                    level[i] = current_level + 1;
+                    has_parent[i] = current_vertex;
+                }
             }
         }
     }

@@ -11,7 +11,6 @@ int main()
 {
     struct timeval start, end;
     double execution_times[TEST_RUNS];
-    bool is_discovered[MAXV + 1];
     uint64_t has_parent[MAXV + 1];
     float avg = 0;
     float sum = 0;
@@ -21,6 +20,13 @@ int main()
     /* Create a Graph */
     graph *g = malloc(sizeof(graph));
     initialize_graph(g, false);
+#pragma omp parallel
+    {
+        if (omp_get_thread_num() == 0)
+        {
+            printf("Using %d Threads via OpenMP\n", omp_get_num_threads());
+        }
+    }
 
     /* Feed in graph data from STDIN */
     read_graph(g, false);
@@ -37,7 +43,6 @@ int main()
 
         for (uint64_t i = 1; i <= g->number_vertices; i++)
         {
-            is_discovered[i] = false;
             has_parent[i] = 0;
         }
         // Select a random vertex as the root
@@ -46,7 +51,7 @@ int main()
 
         // Execute and profile BFS
         gettimeofday(&start, NULL);
-        bfs(g, root, is_discovered, has_parent);
+        bfs(g, root, has_parent);
         gettimeofday(&end, NULL);
 
         // Add execution_times of this iteration to array
