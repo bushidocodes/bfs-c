@@ -14,12 +14,12 @@
 
 // This random generator for unsigned 64-bit integers was developed by StackOverflow user "chux"
 //  https://stackoverflow.com/a/33021408
-uint64_t rand_uint64(void)
+uint32_t rand_uint32(void)
 {
-    uint64_t r = 0;
+    uint32_t r = 0;
     for (int i = LOOP_COUNT; i > 0; i--)
     {
-        r = r * (RAND_MAX + (uint64_t)1) + rand();
+        r = r * (RAND_MAX + (uint32_t)1) + rand();
     }
     return r;
 }

@@ -10,9 +10,9 @@
 #include "queue.c"
 
 // void initialize_search(graph *g);
-void bfs(graph *g, uint64_t start, uint64_t has_parent[]);
+void bfs(graph *g, uint32_t start, uint32_t has_parent[]);
 
-void bfs(graph *g, uint64_t start, uint64_t has_parent[])
+void bfs(graph *g, uint32_t start, uint32_t has_parent[])
 {
     uint8_t *level = malloc((g->number_vertices + 1) * sizeof(uint8_t));
     memset(level, UINT8_MAX, (g->number_vertices + 1) * sizeof(uint8_t));
@@ -27,16 +27,16 @@ void bfs(graph *g, uint64_t start, uint64_t has_parent[])
     {
         should_advance = false;
 #pragma omp parallel for
-        for (uint64_t current_vertex = 1; current_vertex < g->number_vertices; current_vertex++)
+        for (uint32_t current_vertex = 1; current_vertex < g->number_vertices; current_vertex++)
         {
             if (level[current_vertex] == current_level)
             {
                 neighbor_count = getDegree(g, current_vertex);
                 // TODO: I inexplicably need to pad this number... Why?
-                uint64_t *neighbors = malloc((getDegree(g, current_vertex) + 200) * sizeof(uint64_t));
+                uint32_t *neighbors = malloc((getDegree(g, current_vertex) + 200) * sizeof(uint32_t));
                 getNeighbors(g, current_vertex, neighbors);
 
-                for (uint64_t i = 0; i < neighbor_count; i++)
+                for (uint32_t i = 0; i < neighbor_count; i++)
                 {
                     if (level[neighbors[i]] == UINT8_MAX)
                     {
@@ -53,10 +53,10 @@ void bfs(graph *g, uint64_t start, uint64_t has_parent[])
     free(level);
 }
 
-void print_parents(graph *g, uint64_t has_parent[])
+void print_parents(graph *g, uint32_t has_parent[])
 {
-    for (uint64_t i = 1; i <= g->number_vertices; i++)
+    for (uint32_t i = 1; i <= g->number_vertices; i++)
     {
-        printf("%lu has parent %lu\n", i, has_parent[i]);
+        printf("%u has parent %u\n", i, has_parent[i]);
     }
 }

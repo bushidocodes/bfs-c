@@ -31,8 +31,7 @@ int main()
     /* Feed in graph data from STDIN */
     read_graph(g, false);
     printf("Reading Graph from STDIN complete\n");
-    printf("Num V : %lu\n", g->number_vertices);
-    uint64_t *has_parent = malloc((g->number_vertices + 1) * sizeof(uint64_t));
+    uint32_t *has_parent = malloc((g->number_vertices + 1) * sizeof(uint32_t));
 
     /* Print the contents of the graph if desired */
     // print_graph(g);
