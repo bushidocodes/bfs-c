@@ -9,7 +9,6 @@
 typedef struct edge
 {
     uint64_t destination; /* destination vertex of edge a.k.a an adjascent vertex */
-    uint64_t weight;      /* edge weight */
     struct edge *next;    /* next edge in list... I have to use the struct keyboard because this is recursive */
 } edge;
 

@@ -14,8 +14,8 @@ void bfs(graph *g, uint64_t start, uint64_t has_parent[]);
 
 void bfs(graph *g, uint64_t start, uint64_t has_parent[])
 {
-    uint8_t level[MAXV + 1];
-    memset(level, UINT8_MAX, (MAXV + 1) * sizeof(uint8_t));
+    uint8_t *level = malloc((g->number_vertices + 1) * sizeof(uint8_t));
+    memset(level, UINT8_MAX, (g->number_vertices + 1) * sizeof(uint8_t));
     uint8_t current_level = 0;
     uint64_t neighbor_count = 0;
     bool should_advance = true;
@@ -32,7 +32,8 @@ void bfs(graph *g, uint64_t start, uint64_t has_parent[])
             if (level[current_vertex] == current_level)
             {
                 neighbor_count = getDegree(g, current_vertex);
-                uint64_t *neighbors = malloc(MAXV * sizeof(uint64_t));
+                // TODO: I inexplicably need to pad this number... Why?
+                uint64_t *neighbors = malloc((getDegree(g, current_vertex) + 200) * sizeof(uint64_t));
                 getNeighbors(g, current_vertex, neighbors);
 
                 for (uint64_t i = 0; i < neighbor_count; i++)
@@ -49,6 +50,7 @@ void bfs(graph *g, uint64_t start, uint64_t has_parent[])
         }
         current_level++;
     }
+    free(level);
 }
 
 void print_parents(graph *g, uint64_t has_parent[])
