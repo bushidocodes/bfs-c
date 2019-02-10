@@ -11,7 +11,6 @@ int main()
 {
     struct timeval start, end;
     double execution_times[TEST_RUNS];
-    uint64_t has_parent[MAXV + 1];
     float avg = 0;
     float sum = 0;
 
@@ -20,6 +19,7 @@ int main()
     /* Create a Graph */
     graph *g = malloc(sizeof(graph));
     initialize_graph(g, false);
+
 #pragma omp parallel
     {
         if (omp_get_thread_num() == 0)
@@ -31,6 +31,8 @@ int main()
     /* Feed in graph data from STDIN */
     read_graph(g, false);
     printf("Reading Graph from STDIN complete\n");
+    printf("Num V : %lu\n", g->number_vertices);
+    uint64_t *has_parent = malloc((g->number_vertices + 1) * sizeof(uint64_t));
 
     /* Print the contents of the graph if desired */
     // print_graph(g);
@@ -71,4 +73,5 @@ int main()
     printf("Averaged over %d iterations, Time: %fs\n", TEST_RUNS, avg);
 
     return 0;
+    free(has_parent);
 }
