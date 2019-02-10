@@ -61,7 +61,7 @@ int main()
 
     /* Print the parents array to prove correctectness if desired */
     // printf("Printing last execution_times to prove correctness:\n");
-    // print_parents(g, has_parent);
+    print_parents(g, has_parent);
 
     for (int i = 0; i < TEST_RUNS; i++)
     {

@@ -29,6 +29,10 @@ void bfs(graph *g, uint32_t start, uint32_t has_parent[])
 #pragma omp parallel for
         for (uint32_t current_vertex = 1; current_vertex < g->number_vertices; current_vertex++)
         {
+            if (current_vertex % 10000 == 0)
+            {
+                printf("Progress: %u / %u\n", current_vertex, g->number_vertices);
+            }
             if (level[current_vertex] == current_level)
             {
                 neighbor_count = getDegree(g, current_vertex);

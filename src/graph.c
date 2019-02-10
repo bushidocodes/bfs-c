@@ -55,40 +55,45 @@ void initialize_graph(graph *g, bool directed)
 
 void read_graph(graph *g, bool is_directed)
 {
-    edge *edges[MAXV + 1];        /* Array of Pointers used to buffer adjasency list as itermediate representation before building CSR*/
-    uint64_t edge_count;          /* number of edges */
-    uint32_t source, destination; /* vertices in edge (source, destination) */
+    edge **edges = malloc((MAXV + 1) * sizeof(edge)); /* Array of Pointers used to buffer adjasency list as itermediate representation before building CSR*/
+    uint64_t edge_count;                              /* number of edges */
+    uint32_t source, destination;                     /* vertices in edge (source, destination) */
 
     scanf("%u %lu", &(g->number_vertices), &edge_count);
-
+    printf("Reading Edge List\n");
     for (uint64_t i = 1; i <= edge_count; i++)
     {
+        if (i % 10000000 == 0)
+        {
+            printf("Read %lu / %lu Edges\n", i, edge_count);
+        }
         scanf("%u %u", &source, &destination);
         insert_edge(g, edges, source, destination, is_directed);
     }
     build_csr(g, edges);
     // Now I can just free all the memory in the adjacency list
-    // printf("Cleaning up Adjacency List\n");
-    // for (uint64_t i = 1; i < g->number_vertices; i++)
-    // {
-    //     if (edges[i] != NULL)
-    //     {
+    for (uint64_t i = 1; i < (sizeof(edges) / sizeof(&edges[0])); i++)
+    {
+        if (edges[i] != NULL)
+        {
 
-    //         edge *current = edges[i];
-    //         while (current->next != NULL)
-    //         {
-    //             edge *deleteMe = current;
-    //             current = current->next;
-    //             free(deleteMe);
-    //         }
-    //         free(current);
-    //         edges[i] = NULL;
-    //     }
-    // }
+            edge *current = edges[i];
+            while (current->next != NULL)
+            {
+                edge *deleteMe = current;
+                current = current->next;
+                free(deleteMe);
+            }
+            free(current);
+            edges[i] = NULL;
+        }
+    }
+    free(edges);
 }
 
 void build_csr(graph *g, edge *edges[])
 {
+    printf("Starting build_csr\n");
     g->IA = malloc((g->number_edges + 2) * sizeof(uint32_t)); /* I might be off by one here */
 
     // Mark the 0 positions as Evil to force a crash to ensure I'm indexing starting at 1 to be consistent
@@ -97,15 +102,26 @@ void build_csr(graph *g, edge *edges[])
     g->IA[1] = 0;
     // I'm just multiplying by 2 here because the number_edges is only incremented one for the opposing edges on a non-DiGraph. I should really only store non-directed edges once.
     g->JA = malloc((g->number_edges * 2) * sizeof(uint32_t)); // "Column Indices"
-    uint64_t edge_idx = 0;
+    printf("Starting CSR conversion\n");
+#pragma omp parallel for
     for (uint32_t current_vertex = 1; current_vertex < g->number_vertices; current_vertex++)
     {
+        uint64_t edge_idx = 0;
+        if (current_vertex % 10000 == 0)
+        {
+            printf("Read %u / %u Vertices\n", current_vertex, g->number_vertices);
+        }
         for (edge *currentEdge = edges[current_vertex]; currentEdge->next != NULL; currentEdge = currentEdge->next)
         {
             g->JA[edge_idx] = currentEdge->destination;
             edge_idx++;
         }
         g->IA[current_vertex + 1] = edge_idx;
+    }
+
+    for (uint32_t current_vertex = 1; current_vertex < g->number_vertices; current_vertex++)
+    {
+        g->IA[current_vertex + 1] += g->IA[current_vertex];
     }
 }
 
