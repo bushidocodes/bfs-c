@@ -3,7 +3,7 @@
 ## Define compiler and flags
 CC=gcc 
 CXX=gcc 
-CCFLAGS= -std=c11 -Wall -fopenmp 
+CCFLAGS= -std=c11 -Wall -fopenmp -lm
 
 all: build
 
@@ -25,13 +25,14 @@ run-generator: build-generator makeres
 	./dist/generategraph.out 5 4 ./res/5x4_edgelist.txt
 	./dist/generategraph.out 6 16 ./res/6x16_edgelist.txt
 	./dist/generategraph.out 16 16 ./res/16x16_edgelist.txt
+	./dist/generategraph.out 20 16 ./res/20x16_edgelist.txt
 	# ./dist/generategraph.out 26 16 ./res/26x16_edgelist.txt
 
 run-bfs: build-bfs
-	# mpirun -n 2 ./dist/bfs.out --mca orte_base_help_aggregate 0
 	cat ./res/5x4_edgelist.txt | ./dist/bfs.out > ./res/5x4_results.txt
 	cat ./res/6x16_edgelist.txt | ./dist/bfs.out > ./res/6x16_results.txt
 	cat ./res/16x16_edgelist.txt | ./dist/bfs.out > ./res/16x16_results.txt
+	# cat ./res/20x16_edgelist.txt | ./dist/bfs.out > ./res/20x16_results.txt
 	# cat ./res/26x16_edgelist.txt | ./dist/bfs.out > ./res/26x16_results.txt
 
 run: run-generator run-bfs
