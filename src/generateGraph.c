@@ -10,13 +10,13 @@
 
 typedef struct header
 {
-    uint64_t numVertices;
+    uint32_t numVertices;
     uint64_t numEdges;
 } header;
 
 typedef struct edgerecord
 {
-    uint64_t source, destination;
+    uint32_t source, destination;
 } edgerecord;
 
 int main(int argc, char *argv[])
@@ -62,8 +62,8 @@ int main(int argc, char *argv[])
     for (uint64_t i = 1; i <= newHeader->numEdges; i++)
     {
         // For Loop to generate a random connection between two nodes until complete
-        newEdgerecord->source = (rand_uint64() % newHeader->numVertices) + 1;
-        newEdgerecord->destination = (rand_uint64() % newHeader->numVertices) + 1;
+        newEdgerecord->source = (rand_uint32() % newHeader->numVertices) + 1;
+        newEdgerecord->destination = (rand_uint32() % newHeader->numVertices) + 1;
         // Write the edge record to a text file
         fprintf(fp, "%lu %lu\n", newEdgerecord->source, newEdgerecord->destination);
     }
@@ -71,4 +71,5 @@ int main(int argc, char *argv[])
     fclose(fp);
     free(newHeader);
     free(newEdgerecord);
+
 }
