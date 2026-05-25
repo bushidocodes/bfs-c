@@ -1,4 +1,5 @@
-#include <stdint.h>
+#include <stdlib.h>
+#include "rand_uint64.h"
 
 #if RAND_MAX / 256 >= 0xFFFFFFFFFFFFFF
 #define LOOP_COUNT 1
@@ -12,8 +13,7 @@
 #define LOOP_COUNT 5
 #endif
 
-// This random generator for unsigned 64-bit integers was developed by StackOverflow user "chux"
-//  https://stackoverflow.com/a/33021408
+/* 64-bit random integer — source: https://stackoverflow.com/a/33021408 */
 uint64_t rand_uint64(void)
 {
     uint64_t r = 0;

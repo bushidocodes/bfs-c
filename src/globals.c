@@ -1,80 +1,54 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include <mpi.h>
 #include "aml.h"
-#include "queue.c"
+#include "globals.h"
 
 #define FILE_PATH "./res/graph"
 
-typedef struct edge
-{
-    unsigned long destination; /* destination vertex of edge a.k.a an adjascent vertex */
-    struct edge *next;         /* next edge in list... I have to use the struct keyboard because this is recursive */
-} edge;
-
-// Our adjacency list is an array of linked lists called edges. The index of the edges array represents the id of the
-
-typedef struct graph
-{
-    edge *edges[MAXV + 1];           /* adjacency info */
-    unsigned long number_vertices;   /* number of vertices in graph */
-    unsigned long long number_edges; /* number of edges in graph */
-    bool is_directed;                /* Is the graph directed */
-} graph;
-
-typedef struct header
-{
-    unsigned long numVertices;
-    unsigned long long numEdges;
-} header;
-
-typedef struct edgerecord
-{
-    unsigned long source, destination;
-} edgerecord;
-
-// Globals
+/* Global definitions (declared extern in globals.h) */
 int noProcesses, processId;
 graph *g;
 queue *current_queue, *temp, *next_queue;
 bool is_discovered[MAXV + 1];
 int has_parent[MAXV + 1];
 
-void createGlobals();
-void cleanGlobals();
-void edgerecordHandler(int from, void *data, int sz);
-void findneighborsHandler(int from, void *data, int sz);
-void headerHandler(int from, void *data, int sz);
-void initialize_graph(graph *g, bool directed);
-void insert_edge(graph *g, unsigned long source, unsigned long destination, bool is_directed);
-void print_graph(graph *g);
-void processneighborHandler(int from, void *data, int sz);
-void read_graph();
-void read_graph_stdin(graph *g, bool is_directed);
-void rotateQueuesHandler(int from, void *data, int sz);
-
-void createGlobals()
+void createGlobals(void)
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &processId);
     MPI_Comm_size(MPI_COMM_WORLD, &noProcesses);
 
-    /* Initialize Graph */
     g = malloc(sizeof(graph));
+    if (g == NULL) { fprintf(stderr, "malloc failed for graph\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
     initialize_graph(g, false);
 
-    /* Create Queues */
     current_queue = malloc(sizeof(queue));
+    if (current_queue == NULL) { fprintf(stderr, "malloc failed for current_queue\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
     reset(current_queue, false);
+
     next_queue = malloc(sizeof(queue));
+    if (next_queue == NULL) { fprintf(stderr, "malloc failed for next_queue\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
     reset(next_queue, false);
 
-    /* Register my AML Handlers */
-    aml_register_handler(headerHandler, 1);
-    aml_register_handler(edgerecordHandler, 2);
-    aml_register_handler(findneighborsHandler, 3);
-    aml_register_handler(processneighborHandler, 4);
+    aml_register_handler(headerHandler,          HANDLER_HEADER);
+    aml_register_handler(edgerecordHandler,       HANDLER_EDGE_RECORD);
+    aml_register_handler(findneighborsHandler,    HANDLER_FIND_NEIGHBORS);
+    aml_register_handler(processneighborHandler,  HANDLER_PROCESS_NEIGHBOR);
 }
-void cleanGlobals()
+
+void cleanGlobals(void)
 {
     printf("Clean globals...");
+    for (unsigned long i = 0; i <= MAXV; i++)
+    {
+        edge *e = g->edges[i];
+        while (e != NULL)
+        {
+            edge *next = e->next;
+            free(e);
+            e = next;
+        }
+    }
     free(g);
     free(current_queue);
     free(next_queue);
@@ -82,6 +56,7 @@ void cleanGlobals()
 
 void edgerecordHandler(int from, void *data, int sz)
 {
+    (void)from; (void)sz;
     edgerecord *record = data;
     printf("%d inserting edge %lu %lu\n", processId, record->source, record->destination);
     insert_edge(g, record->source, record->destination, false);
@@ -89,20 +64,22 @@ void edgerecordHandler(int from, void *data, int sz)
 
 void findneighborsHandler(int from, void *data, int sz)
 {
+    (void)from; (void)sz;
     edgerecord *record = data;
     printf("%d %lu\n", processId, record->source);
-    edge *edgeLinkedList;
-    edgeLinkedList = g->edges[record->source];
+    edge *edgeLinkedList = g->edges[record->source];
     while (edgeLinkedList != NULL)
     {
         record->destination = edgeLinkedList->destination;
-        aml_send(record, 4, sizeof(edgerecord), record->destination % noProcesses); /* processneighborHandler */
+        aml_send(record, HANDLER_PROCESS_NEIGHBOR, sizeof(edgerecord),
+                 record->destination % noProcesses);
         edgeLinkedList = edgeLinkedList->next;
     }
-};
+}
 
 void headerHandler(int from, void *data, int sz)
 {
+    (void)from; (void)sz;
     header *newHeader = data;
     printf("%d setting num vertices to %lu\n", processId, newHeader->numVertices);
     g->number_vertices = newHeader->numVertices;
@@ -120,38 +97,28 @@ void initialize_graph(graph *g, bool directed)
     g->is_directed = directed;
 }
 
-// Inserts an edge from source to destination in the adjascency list of graph g. If the edge is not directed, it adds source -> destination and destination -> but only increments th edge count once.
 void insert_edge(graph *g, unsigned long source, unsigned long destination, bool is_directed)
 {
-    edge *new_edge;                  /* temporary pointer */
-    new_edge = malloc(sizeof(edge)); /* allocate edge storage */
+    edge *new_edge = malloc(sizeof(edge));
+    if (new_edge == NULL) { fprintf(stderr, "malloc failed for edge\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
 
     new_edge->destination = destination;
-
     new_edge->next = g->edges[source];
-
     g->edges[source] = new_edge;
 
-    if (is_directed == false)
+    if (!is_directed)
     {
-        // We set directed to true in this call so we don't infinitely loop
+        /* Pass true so the reverse direction doesn't recurse again */
         insert_edge(g, destination, source, true);
-    }
-    else
-    {
-        // By incrementing in this else block, we only increment one for undirected graphs
-        // g->number_edges++;
     }
 }
 
 void print_graph(graph *g)
 {
-    edge *p; /* temporary pointer */
-
     for (unsigned long i = 1; i <= g->number_vertices; i++)
     {
         printf("%lu: ", i);
-        p = g->edges[i];
+        edge *p = g->edges[i];
         while (p != NULL)
         {
             printf("%lu", p->destination);
@@ -163,40 +130,47 @@ void print_graph(graph *g)
 
 void processneighborHandler(int from, void *data, int sz)
 {
+    (void)from; (void)sz;
     edgerecord *record = data;
     printf("%d is checking %lu %lu\n", processId, record->source, record->destination);
 
-    if (is_discovered[record->destination] == false)
+    if (!is_discovered[record->destination])
     {
         enqueue(record->destination, next_queue);
         is_discovered[record->destination] = true;
-        has_parent[record->destination] = record->source;
+        has_parent[record->destination] = (int)record->source;
     }
 }
 
-void read_graph()
+void read_graph(void)
 {
     printf("Read_graph %d %d\n", processId, noProcesses);
 
     edgerecord *newEdgerecord;
     FILE *fp;
 
-    // Read the Header
     if (processId == 0)
     {
         header *newHeader = malloc(sizeof(header));
+        if (newHeader == NULL) { fprintf(stderr, "malloc failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
         newEdgerecord = malloc(sizeof(edgerecord));
+        if (newEdgerecord == NULL) { fprintf(stderr, "malloc failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
+
         fp = fopen(FILE_PATH, "r");
+        if (fp == NULL) { fprintf(stderr, "fopen failed: %s\n", FILE_PATH); MPI_Abort(MPI_COMM_WORLD, 1); }
+
         fread(newHeader, sizeof(struct header), 1, fp);
         for (int i = 0; i < noProcesses; i++)
         {
             printf("Sending Stuff to %d\n", i);
-            aml_send(newHeader, 1, sizeof(header), i); /* Send the header to each of the other processes */
+            aml_send(newHeader, HANDLER_HEADER, sizeof(header), i);
         }
         free(newHeader);
     }
+
     aml_barrier();
     printf("%d has %llu\n", processId, g->number_edges);
+
     if (processId == 0)
     {
         printf("Reading from Disk\n");
@@ -207,9 +181,11 @@ void read_graph()
             printf("Dispatching to %llu\n", i % noProcesses);
             fread(newEdgerecord, sizeof(struct edgerecord), 1, fp);
             printf("New Edge Record %lu %lu\n", newEdgerecord->source, newEdgerecord->destination);
-            aml_send(newEdgerecord, 2, sizeof(edgerecord), i % noProcesses); /* edgerecordHandler */
+            aml_send(newEdgerecord, HANDLER_EDGE_RECORD, sizeof(edgerecord), i % noProcesses);
         }
         free(newEdgerecord);
+        fclose(fp);
     }
+
     aml_barrier();
 }
