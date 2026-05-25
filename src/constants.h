@@ -1,1 +1,2 @@
+#pragma once
 #define MAXV 1000000 /* maximum number of vertices */

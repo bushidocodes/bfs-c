@@ -2,45 +2,41 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
+#include <unistd.h>
 #include <mpi.h>
 #include "aml.h"
-#include "aml.c"
-#include "constants.h"
-#include "globals.c"
-#include "bfs.c"
+#include "globals.h"
 
 int main(int argc, char *argv[])
 {
-    /* Problem Vars */
     unsigned long start;
-    // Initialize queue
-    // queue *current_queue, *temp;
-    // current_queue = malloc(sizeof(queue));
     unsigned long vertex;
-    // reset(current_queue, false);
 
-    /* MPI Setup */
-    aml_init(&argc, &argv); //includes MPI_Init inside
+    aml_init(&argc, &argv);
     createGlobals();
     aml_barrier();
     read_graph();
 
-    // Generate a Random Start Vertex and begin BFS
     srand(time(0));
     printf("# Vertices: %lu\n", g->number_vertices);
     start = rand() % (g->number_vertices - 1);
     printf("%d generated random start of %lu\n", processId, start);
+
     edgerecord *record = malloc(sizeof(edgerecord));
+    if (record == NULL) { fprintf(stderr, "malloc failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
     record->destination = start;
     record->source = start;
     if (processId == 0)
     {
-        aml_send(record, 4, sizeof(edgerecord), record->destination % noProcesses); /* processneighborHandler */
+        aml_send(record, HANDLER_PROCESS_NEIGHBOR, sizeof(edgerecord),
+                 record->destination % noProcesses);
     }
+    free(record);
 
     aml_barrier();
-    sleep(1);
+    usleep(1000000); /* 1 second — give messages time to propagate */
     aml_barrier();
+
     bool should_loop = true;
     int retries = 3;
     while (should_loop)
@@ -49,12 +45,13 @@ int main(int argc, char *argv[])
         {
             vertex = dequeue(current_queue);
             printf("%d dequeued %lu\n", processId, vertex);
-            // send AML
-            edgerecord *record = malloc(sizeof(edgerecord));
-            record->source = vertex;
-            aml_send(record, 3, sizeof(edgerecord), vertex % noProcesses); /* findNeighborsHandler */
+            edgerecord *msg = malloc(sizeof(edgerecord));
+            if (msg == NULL) { fprintf(stderr, "malloc failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
+            msg->source = vertex;
+            aml_send(msg, HANDLER_FIND_NEIGHBORS, sizeof(edgerecord), vertex % noProcesses);
+            free(msg);
         }
-        // aml_barrier();
+
         if (len(current_queue) == 0 && len(next_queue) > 0)
         {
             printf("%d Flipping queues\n", processId);
@@ -71,16 +68,15 @@ int main(int argc, char *argv[])
                 should_loop = false;
             else
             {
-                printf("Empty frontier... Sleeping for 1s just in case...\n");
-                sleep(0.1);
+                printf("Empty frontier... Sleeping for 100ms just in case...\n");
+                usleep(100000); /* 100 ms */
                 retries--;
             }
-            // I suspect I might might need to add some retries and sleeps here because aml_barrier does not seem to be working above as I otherwise would expect
         }
     }
-    // If this were working properly, I would need to reduce the has_parents data structure
+
     printf("%d END\n", processId);
     cleanGlobals();
-    // aml_finalize(); //includes MPI_Finalize()... This hangs inexplicably...
+    /* aml_finalize() hangs — MPI_Finalize is called implicitly on exit */
     return 0;
 }

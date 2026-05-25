@@ -1,23 +1,11 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
-#include "constants.h"
-
-/* Array Based Queue */
-
-typedef struct queue
-{
-    unsigned long data[MAXV]; /* Array that stores the queue */
-    int start;                /* idx of the start of the queue */
-    int end;                  /* ids of the end of the queue (exclusive) */
-} queue;
+#include "queue.h"
 
 void enqueue(unsigned long x, queue *q)
 {
     if (q->end >= MAXV)
     {
         printf("Error: Queue is full");
-        /* TODO: Implement queue cleanup...*/
         return;
     }
     q->data[q->end - 1] = x;
@@ -29,9 +17,9 @@ unsigned long dequeue(queue *q)
     if (q->start == q->end - 1)
     {
         printf("Error: Queue is empty\n");
-        return -1;
+        return (unsigned long)-1;
     }
-    int result = q->data[q->start];
+    unsigned long result = q->data[q->start];
     q->start++;
     return result;
 }
