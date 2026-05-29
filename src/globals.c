@@ -70,6 +70,11 @@ void findneighborsHandler(int from, void *data, int sz)
     edgerecord record;
     memcpy(&record, data, sizeof record);
     printf("%d %lu\n", processId, record.source);
+    if (record.source > MAXV) {
+        fprintf(stderr, "findneighborsHandler: source %lu exceeds MAXV %d\n",
+                record.source, MAXV);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
     edge *edgeLinkedList = g->edges[record.source];
     while (edgeLinkedList != NULL)
     {
@@ -103,6 +108,11 @@ void initialize_graph(graph *g, bool directed)
 
 void insert_edge(graph *g, unsigned long source, unsigned long destination, bool is_directed)
 {
+    if (source > MAXV || destination > MAXV) {
+        fprintf(stderr, "insert_edge: vertex out of bounds (source=%lu, destination=%lu, MAXV=%d)\n",
+                source, destination, MAXV);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
     edge *new_edge = malloc(sizeof(edge));
     if (new_edge == NULL) { fprintf(stderr, "malloc failed for edge\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
 
@@ -139,6 +149,11 @@ void processneighborHandler(int from, void *data, int sz)
     memcpy(&record, data, sizeof record);
     printf("%d is checking %lu %lu\n", processId, record.source, record.destination);
 
+    if (record.destination > MAXV) {
+        fprintf(stderr, "processneighborHandler: destination %lu exceeds MAXV %d\n",
+                record.destination, MAXV);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
     if (!is_discovered[record.destination])
     {
         enqueue(record.destination, next_queue);
@@ -165,6 +180,11 @@ void read_graph(void)
         if (fp == NULL) { fprintf(stderr, "fopen failed: %s\n", FILE_PATH); MPI_Abort(MPI_COMM_WORLD, 1); }
 
         fread(newHeader, sizeof(struct header), 1, fp);
+        if (newHeader->numVertices > MAXV) {
+            fprintf(stderr, "graph file numVertices %lu exceeds MAXV %d\n",
+                    newHeader->numVertices, MAXV);
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
         for (int i = 0; i < noProcesses; i++)
         {
             printf("Sending Stuff to %d\n", i);
