@@ -16,9 +16,14 @@ int main(int argc, char *argv[])
     aml_barrier();
     read_graph();
 
+    if (g->number_vertices < 1) {
+        fprintf(stderr, "error: graph has %lu vertices; need at least 1\n", g->number_vertices);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
     srand(time(0));
     printf("# Vertices: %lu\n", g->number_vertices);
-    start = rand() % (g->number_vertices - 1);
+    start = rand() % g->number_vertices;
     printf("%d generated random start of %lu\n", processId, start);
 
     edgerecord *record = malloc(sizeof(edgerecord));
