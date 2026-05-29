@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
-#include <unistd.h>
 #include <mpi.h>
 #include "aml.h"
 #include "globals.h"
@@ -33,13 +32,9 @@ int main(int argc, char *argv[])
     }
     free(record);
 
-    aml_barrier();
-    usleep(1000000); /* 1 second — give messages time to propagate */
-    aml_barrier();
+    aml_barrier(); /* ensure root vertex is in next_queue before BFS loop */
 
-    bool should_loop = true;
-    int retries = 3;
-    while (should_loop)
+    while (true)
     {
         while (len(current_queue) > 0)
         {
@@ -52,31 +47,23 @@ int main(int argc, char *argv[])
             free(msg);
         }
 
-        if (len(current_queue) == 0 && len(next_queue) > 0)
-        {
-            printf("%d Flipping queues\n", processId);
-            temp = current_queue;
-            current_queue = next_queue;
-            reset(temp, false);
-            next_queue = temp;
-            retries = 3;
-        }
-        else
-        {
-            aml_barrier();
-            if (retries == 0)
-                should_loop = false;
-            else
-            {
-                printf("Empty frontier... Sleeping for 100ms just in case...\n");
-                usleep(100000); /* 100 ms */
-                retries--;
-            }
-        }
+        aml_barrier(); /* flush all in-flight messages for this BFS level */
+
+        int local_len = len(next_queue);
+        int global_len = 0;
+        MPI_Allreduce(&local_len, &global_len, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+        if (global_len == 0)
+            break;
+
+        printf("%d Flipping queues\n", processId);
+        temp = current_queue;
+        current_queue = next_queue;
+        reset(temp, false);
+        next_queue = temp;
     }
 
     printf("%d END\n", processId);
     cleanGlobals();
-    /* aml_finalize() hangs — MPI_Finalize is called implicitly on exit */
+    aml_finalize();
     return 0;
 }
