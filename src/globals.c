@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <mpi.h>
 #include "aml.h"
 #include "globals.h"
@@ -57,22 +58,24 @@ void cleanGlobals(void)
 void edgerecordHandler(int from, void *data, int sz)
 {
     (void)from; (void)sz;
-    edgerecord *record = data;
-    printf("%d inserting edge %lu %lu\n", processId, record->source, record->destination);
-    insert_edge(g, record->source, record->destination, false);
+    edgerecord record;
+    memcpy(&record, data, sizeof record);
+    printf("%d inserting edge %lu %lu\n", processId, record.source, record.destination);
+    insert_edge(g, record.source, record.destination, false);
 }
 
 void findneighborsHandler(int from, void *data, int sz)
 {
     (void)from; (void)sz;
-    edgerecord *record = data;
-    printf("%d %lu\n", processId, record->source);
-    edge *edgeLinkedList = g->edges[record->source];
+    edgerecord record;
+    memcpy(&record, data, sizeof record);
+    printf("%d %lu\n", processId, record.source);
+    edge *edgeLinkedList = g->edges[record.source];
     while (edgeLinkedList != NULL)
     {
-        record->destination = edgeLinkedList->destination;
-        aml_send(record, HANDLER_PROCESS_NEIGHBOR, sizeof(edgerecord),
-                 record->destination % noProcesses);
+        record.destination = edgeLinkedList->destination;
+        aml_send(&record, HANDLER_PROCESS_NEIGHBOR, sizeof(edgerecord),
+                 record.destination % noProcesses);
         edgeLinkedList = edgeLinkedList->next;
     }
 }
@@ -80,10 +83,11 @@ void findneighborsHandler(int from, void *data, int sz)
 void headerHandler(int from, void *data, int sz)
 {
     (void)from; (void)sz;
-    header *newHeader = data;
-    printf("%d setting num vertices to %lu\n", processId, newHeader->numVertices);
-    g->number_vertices = newHeader->numVertices;
-    g->number_edges = newHeader->numEdges;
+    header h;
+    memcpy(&h, data, sizeof h);
+    printf("%d setting num vertices to %lu\n", processId, h.numVertices);
+    g->number_vertices = h.numVertices;
+    g->number_edges = h.numEdges;
 }
 
 void initialize_graph(graph *g, bool directed)
@@ -131,14 +135,15 @@ void print_graph(graph *g)
 void processneighborHandler(int from, void *data, int sz)
 {
     (void)from; (void)sz;
-    edgerecord *record = data;
-    printf("%d is checking %lu %lu\n", processId, record->source, record->destination);
+    edgerecord record;
+    memcpy(&record, data, sizeof record);
+    printf("%d is checking %lu %lu\n", processId, record.source, record.destination);
 
-    if (!is_discovered[record->destination])
+    if (!is_discovered[record.destination])
     {
-        enqueue(record->destination, next_queue);
-        is_discovered[record->destination] = true;
-        has_parent[record->destination] = (int)record->source;
+        enqueue(record.destination, next_queue);
+        is_discovered[record.destination] = true;
+        has_parent[record.destination] = (int)record.source;
     }
 }
 
