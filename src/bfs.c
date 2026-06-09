@@ -17,6 +17,6 @@ void print_parents(graph *g)
 {
     for (unsigned long i = 0; i < g->number_vertices; i++)
     {
-        printf("%lu has parent %d\n", i, has_parent[i]);
+        printf("%lu has parent %lu\n", i, has_parent[i]);
     }
 }

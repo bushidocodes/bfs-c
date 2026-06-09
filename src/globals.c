@@ -12,7 +12,7 @@ int noProcesses, processId;
 graph *g;
 queue *current_queue, *temp, *next_queue;
 bool is_discovered[MAXV + 1];
-int has_parent[MAXV + 1];
+unsigned long has_parent[MAXV + 1];
 
 void createGlobals(void)
 {
@@ -158,7 +158,7 @@ void processneighborHandler(int from, void *data, int sz)
     {
         enqueue(record.destination, next_queue);
         is_discovered[record.destination] = true;
-        has_parent[record.destination] = (int)record.source;
+        has_parent[record.destination] = record.source;
     }
 }
 

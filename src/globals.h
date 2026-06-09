@@ -36,7 +36,7 @@ extern int noProcesses, processId;
 extern graph *g;
 extern queue *current_queue, *temp, *next_queue;
 extern bool is_discovered[MAXV + 1];
-extern int has_parent[MAXV + 1];
+extern unsigned long has_parent[MAXV + 1];
 
 void createGlobals(void);
 void cleanGlobals(void);
