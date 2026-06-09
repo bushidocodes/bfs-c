@@ -2,14 +2,14 @@
 #include "bfs.h"
 
 /* Recursively traces parent chain to print the shortest path from start to end */
-void find_path(int start, int end, int parents[])
+void find_path(unsigned long start, unsigned long end, unsigned long parents[])
 {
-    if ((start == end) || (end == -1))
-        printf("\n%d", start);
+    if ((start == end) || (end == (unsigned long)-1))
+        printf("\n%lu", start);
     else
     {
         find_path(start, parents[end], parents);
-        printf(" %d", end);
+        printf(" %lu", end);
     }
 }
 
