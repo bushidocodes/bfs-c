@@ -174,15 +174,18 @@ void read_graph(void)
         header *newHeader = malloc(sizeof(header));
         if (newHeader == NULL) { fprintf(stderr, "malloc failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
         newEdgerecord = malloc(sizeof(edgerecord));
-        if (newEdgerecord == NULL) { fprintf(stderr, "malloc failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
+        if (newEdgerecord == NULL) { free(newHeader); fprintf(stderr, "malloc failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
 
         fp = fopen(FILE_PATH, "r");
-        if (fp == NULL) { fprintf(stderr, "fopen failed: %s\n", FILE_PATH); MPI_Abort(MPI_COMM_WORLD, 1); }
+        if (fp == NULL) { free(newHeader); free(newEdgerecord); fprintf(stderr, "fopen failed: %s\n", FILE_PATH); MPI_Abort(MPI_COMM_WORLD, 1); }
 
         fread(newHeader, sizeof(struct header), 1, fp);
         if (newHeader->numVertices > MAXV) {
             fprintf(stderr, "graph file numVertices %lu exceeds MAXV %d\n",
                     newHeader->numVertices, MAXV);
+            free(newHeader);
+            free(newEdgerecord);
+            fclose(fp);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         for (int i = 0; i < noProcesses; i++)
