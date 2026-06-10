@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Regression tests for issue #4: bounds-check on graph file inputs.
+# Regression tests for graph file validation (issue #4) and queue reset (issue #12).
 # Requires: gcc, python3
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$SCRIPT_DIR/.."
 VALIDATOR="$ROOT/dist/validate_file"
+QUEUE_TEST="$ROOT/dist/test_queue"
 TMPDIR_TESTS="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR_TESTS"' EXIT
 
@@ -18,6 +19,14 @@ fail() { echo "[FAIL] $1"; FAIL=$((FAIL + 1)); }
 echo "Building validator..."
 gcc -std=c17 -Wall -g "$SCRIPT_DIR/validate_file.c" -o "$VALIDATOR"
 echo "Built: $VALIDATOR"
+
+# Build the queue unit test (with AddressSanitizer to catch OOB writes)
+echo "Building queue test..."
+gcc -std=c17 -Wall -g -fsanitize=address,leak \
+    -I"$ROOT/src" \
+    "$SCRIPT_DIR/test_queue.c" "$ROOT/src/queue.c" \
+    -o "$QUEUE_TEST"
+echo "Built: $QUEUE_TEST"
 echo
 
 # Helper: write a binary graph file via Python.
@@ -40,6 +49,20 @@ PYEOF
 }
 
 MAXV=1000000
+
+# ---- Queue unit tests (issue #12) ----
+set +e
+QUEUE_OUT=$("$QUEUE_TEST" 2>&1); QUEUE_RC=$?
+set -e
+while IFS= read -r line; do
+    case "$line" in
+        \[PASS\]*) pass "${line#\[PASS\] }" ;;
+        \[FAIL\]*) fail "${line#\[FAIL\] }" ;;
+    esac
+done <<< "$QUEUE_OUT"
+if [[ $QUEUE_RC -ne 0 && ! "$QUEUE_OUT" == *"[FAIL]"* ]]; then
+    fail "test_queue crashed or ASAN detected a violation (exit=$QUEUE_RC)"
+fi
 
 # ---- Test 1: valid graph ----
 G="$TMPDIR_TESTS/valid.graph"

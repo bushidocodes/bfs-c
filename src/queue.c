@@ -33,7 +33,7 @@ void reset(queue *q, bool should_zero_data)
 {
     if (should_zero_data)
     {
-        for (int i = 0; i <= q->end; i++)
+        for (int i = 0; i < q->end - 1; i++)
         {
             q->data[i] = 0;
         }
