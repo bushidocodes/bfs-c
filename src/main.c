@@ -5,6 +5,7 @@
 #include <mpi.h>
 #include "aml.h"
 #include "globals.h"
+#include "rand_uint64.h"
 
 int main(int argc, char *argv[])
 {
@@ -21,10 +22,13 @@ int main(int argc, char *argv[])
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-    srand(time(0));
+    if (processId == 0) {
+        srand(time(0));
+        start = rand_uint64() % g->number_vertices;
+    }
+    MPI_Bcast(&start, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
     printf("# Vertices: %lu\n", g->number_vertices);
-    start = rand() % g->number_vertices;
-    printf("%d generated random start of %lu\n", processId, start);
+    printf("%d using start vertex %lu\n", processId, start);
 
     edgerecord *record = malloc(sizeof(edgerecord));
     if (record == NULL) { fprintf(stderr, "malloc failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
