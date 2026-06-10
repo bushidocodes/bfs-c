@@ -86,7 +86,37 @@ else
     fail "OOB edge destination: expected rejection (rc=$RC, out='$OUT')"
 fi
 
-# ---- Test 5: boundary value — vertex exactly at MAXV (should succeed) ----
+# ---- Test 5: truncated header (file too short to hold header struct) ----
+G="$TMPDIR_TESTS/truncated_header.graph"
+printf '\x01\x00' > "$G"   # only 2 bytes, well short of 16-byte header
+set +e
+OUT=$("$VALIDATOR" "$G" 2>&1); RC=$?
+set -e
+if [[ $RC -ne 0 ]] && echo "$OUT" | grep -q "failed to read header"; then
+    pass "truncated header → rejected with correct message"
+else
+    fail "truncated header: expected rejection (rc=$RC, out='$OUT')"
+fi
+
+# ---- Test 6: truncated edge records (header says 2 edges but file only has 1) ----
+G="$TMPDIR_TESTS/truncated_edges.graph"
+python3 - "$G" <<'PYEOF'
+import sys, struct
+path = sys.argv[1]
+with open(path, 'wb') as f:
+    f.write(struct.pack('<QQ', 8, 2))     # header: 8 vertices, 2 edges
+    f.write(struct.pack('<QQ', 1, 2))     # only 1 edge record written
+PYEOF
+set +e
+OUT=$("$VALIDATOR" "$G" 2>&1); RC=$?
+set -e
+if [[ $RC -ne 0 ]] && echo "$OUT" | grep -q "failed to read edge record"; then
+    pass "truncated edge records → rejected with correct message"
+else
+    fail "truncated edge records: expected rejection (rc=$RC, out='$OUT')"
+fi
+
+# ---- Test 7: boundary value — vertex exactly at MAXV-1 (should succeed) ----
 G="$TMPDIR_TESTS/boundary.graph"
 write_graph "$G" $MAXV 1 $((MAXV - 1)) $((MAXV - 1))
 if "$VALIDATOR" "$G"; then

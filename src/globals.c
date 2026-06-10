@@ -179,7 +179,13 @@ void read_graph(void)
         fp = fopen(FILE_PATH, "r");
         if (fp == NULL) { free(newHeader); free(newEdgerecord); fprintf(stderr, "fopen failed: %s\n", FILE_PATH); MPI_Abort(MPI_COMM_WORLD, 1); }
 
-        fread(newHeader, sizeof(struct header), 1, fp);
+        if (fread(newHeader, sizeof(struct header), 1, fp) != 1) {
+            fprintf(stderr, "read_graph: failed to read header from %s\n", FILE_PATH);
+            free(newHeader);
+            free(newEdgerecord);
+            fclose(fp);
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
         if (newHeader->numVertices > MAXV) {
             fprintf(stderr, "graph file numVertices %lu exceeds MAXV %d\n",
                     newHeader->numVertices, MAXV);
@@ -207,7 +213,12 @@ void read_graph(void)
         {
             printf("Reading %llu / %llu\n", i + 1, g->number_edges);
             printf("Dispatching to %llu\n", i % noProcesses);
-            fread(newEdgerecord, sizeof(struct edgerecord), 1, fp);
+            if (fread(newEdgerecord, sizeof(struct edgerecord), 1, fp) != 1) {
+                fprintf(stderr, "read_graph: failed to read edge record %llu\n", i);
+                free(newEdgerecord);
+                fclose(fp);
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
             printf("New Edge Record %lu %lu\n", newEdgerecord->source, newEdgerecord->destination);
             aml_send(newEdgerecord, HANDLER_EDGE_RECORD, sizeof(edgerecord), i % noProcesses);
         }
