@@ -6,6 +6,7 @@
 #include "aml.h"
 #include "globals.h"
 #include "rand_uint64.h"
+#include "bfs.h"
 
 int main(int argc, char *argv[])
 {
@@ -72,6 +73,16 @@ int main(int argc, char *argv[])
     }
 
     printf("%d END\n", processId);
+
+    /* Merge distributed has_parent[] views, then report the BFS tree on rank 0 */
+    MPI_Allreduce(MPI_IN_PLACE, has_parent, (int)g->number_vertices,
+                  MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+    if (processId == 0)
+    {
+        printf("BFS tree from start vertex %lu:\n", start);
+        print_parents(g);
+    }
+
     cleanGlobals();
     aml_finalize();
     return 0;
