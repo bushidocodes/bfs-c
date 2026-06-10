@@ -50,7 +50,11 @@ int main(int argc, char *argv[])
     if (!fp) { perror("fopen"); return 2; }
 
     header h;
-    if (fread(&h, sizeof h, 1, fp) != 1) { fclose(fp); return 2; }
+    if (fread(&h, sizeof h, 1, fp) != 1) {
+        fprintf(stderr, "validate_file: failed to read header\n");
+        fclose(fp);
+        return 2;
+    }
 
     if (h.numVertices > MAXV) {
         fprintf(stderr, "graph file numVertices %lu exceeds MAXV %d\n",
@@ -64,7 +68,11 @@ int main(int argc, char *argv[])
 
     for (unsigned long long i = 0; i < h.numEdges; i++) {
         edgerecord r;
-        if (fread(&r, sizeof r, 1, fp) != 1) { fclose(fp); return 2; }
+        if (fread(&r, sizeof r, 1, fp) != 1) {
+            fprintf(stderr, "validate_file: failed to read edge record %llu\n", i);
+            fclose(fp);
+            return 2;
+        }
         insert_edge(r.source, r.destination, false);
     }
     fclose(fp);
