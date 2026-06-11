@@ -6,7 +6,7 @@ CFLAGS = -g -std=c17 -Wall -Wextra -I./src
 ## aml.c is third-party (Graph500); compile with fewer warnings
 AML_CFLAGS = -g -std=c99 -I./src
 
-BFS_SRCS = src/main.c src/globals.c src/bfs.c src/queue.c src/rand_uint64.c
+BFS_SRCS = src/main.c src/globals.c src/bfs.c src/queue.c src/rand_uint64.c src/bitarray.c
 BFS_OBJS = $(patsubst src/%.c,dist/%.o,$(BFS_SRCS))
 AML_OBJ  = dist/aml.o
 

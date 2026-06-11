@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$SCRIPT_DIR/.."
 VALIDATOR="$ROOT/dist/validate_file"
 QUEUE_TEST="$ROOT/dist/test_queue"
+BITARRAY_TEST="$ROOT/dist/test_bitarray"
 TMPDIR_TESTS="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR_TESTS"' EXIT
 
@@ -27,6 +28,14 @@ gcc -std=c17 -Wall -g -fsanitize=address,leak \
     "$SCRIPT_DIR/test_queue.c" "$ROOT/src/queue.c" \
     -o "$QUEUE_TEST"
 echo "Built: $QUEUE_TEST"
+
+# Build the bitarray unit test (with AddressSanitizer to catch OOB writes)
+echo "Building bitarray test..."
+gcc -std=c17 -Wall -g -fsanitize=address,leak \
+    -I"$ROOT/src" \
+    "$SCRIPT_DIR/test_bitarray.c" "$ROOT/src/bitarray.c" \
+    -o "$BITARRAY_TEST"
+echo "Built: $BITARRAY_TEST"
 echo
 
 # Helper: write a binary graph file via Python.
@@ -62,6 +71,20 @@ while IFS= read -r line; do
 done <<< "$QUEUE_OUT"
 if [[ $QUEUE_RC -ne 0 && ! "$QUEUE_OUT" == *"[FAIL]"* ]]; then
     fail "test_queue crashed or ASAN detected a violation (exit=$QUEUE_RC)"
+fi
+
+# ---- Bitarray unit tests (issue #15) ----
+set +e
+BITARRAY_OUT=$("$BITARRAY_TEST" 2>&1); BITARRAY_RC=$?
+set -e
+while IFS= read -r line; do
+    case "$line" in
+        \[PASS\]*) pass "${line#\[PASS\] }" ;;
+        \[FAIL\]*) fail "${line#\[FAIL\] }" ;;
+    esac
+done <<< "$BITARRAY_OUT"
+if [[ $BITARRAY_RC -ne 0 && ! "$BITARRAY_OUT" == *"[FAIL]"* ]]; then
+    fail "test_bitarray crashed or ASAN detected a violation (exit=$BITARRAY_RC)"
 fi
 
 # ---- Test 1: valid graph ----

@@ -1,5 +1,6 @@
 #pragma once
 #include <stdbool.h>
+#include "bitarray.h"
 #include "constants.h"
 #include "queue.h"
 
@@ -35,7 +36,7 @@ typedef struct edgerecord {
 extern int noProcesses, processId;
 extern graph *g;
 extern queue *current_queue, *temp, *next_queue;
-extern bool is_discovered[MAXV + 1];
+extern word_t is_discovered[BITS_TO_WORDS(MAXV + 1)];
 extern unsigned long has_parent[MAXV + 1];
 
 void createGlobals(void);

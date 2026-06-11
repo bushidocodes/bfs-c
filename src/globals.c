@@ -11,7 +11,7 @@
 int noProcesses, processId;
 graph *g;
 queue *current_queue, *temp, *next_queue;
-bool is_discovered[MAXV + 1];
+word_t is_discovered[BITS_TO_WORDS(MAXV + 1)];
 unsigned long has_parent[MAXV + 1];
 
 void createGlobals(void)
@@ -154,10 +154,10 @@ void processneighborHandler(int from, void *data, int sz)
                 record.destination, MAXV);
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
-    if (!is_discovered[record.destination])
+    if (!get_bit(is_discovered, record.destination))
     {
         enqueue(record.destination, next_queue);
-        is_discovered[record.destination] = true;
+        set_bit(is_discovered, record.destination);
         has_parent[record.destination] = record.source;
     }
 }
