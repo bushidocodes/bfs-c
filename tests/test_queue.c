@@ -53,6 +53,17 @@ int main(void)
     reset(&q, true);
     check("reset after dequeue: end=1", q.end == 1);
 
+    /* Test 4: full capacity — all MAXV slots must be usable (issue #27).
+     * The off-by-one bug let only MAXV-1 items be stored before a spurious
+     * "Queue is full". Enqueue exactly MAXV items and verify all are kept. */
+    reset(&q, false);
+    for (unsigned long i = 0; i < (unsigned long)MAXV; i++)
+        enqueue(i, &q);
+    check("queue holds full MAXV items", len(&q) == MAXV);
+    check("last slot data[MAXV-1] was written", q.data[MAXV - 1] == (unsigned long)(MAXV - 1));
+    check("dequeue returns first item after full fill", dequeue(&q) == 0);
+    check("dequeue returns second item after full fill", dequeue(&q) == 1);
+
     printf("\nResults: %d passed, %d failed out of %d tests\n",
            pass_count, fail_count, pass_count + fail_count);
     return fail_count ? 1 : 0;

@@ -3,7 +3,7 @@
 
 void enqueue(unsigned long x, queue *q)
 {
-    if (q->end >= MAXV)
+    if (q->end > MAXV)
     {
         printf("Error: Queue is full");
         return;
