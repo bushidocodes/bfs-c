@@ -16,24 +16,52 @@ PASS=0; FAIL=0
 pass() { echo "[PASS] $1"; PASS=$((PASS + 1)); }
 fail() { echo "[FAIL] $1"; FAIL=$((FAIL + 1)); }
 
+# Run a Unity test binary and fold its per-test results into PASS/FAIL counts.
+# Unity prints "file:line:test_name:PASS" or "file:line:test_name:FAIL: msg".
+run_unity() {
+    local name="$1" bin="$2" out rc line body tn
+    set +e
+    out=$("$bin" 2>&1); rc=$?
+    set -e
+    while IFS= read -r line; do
+        line="${line%$'\r'}"   # tolerate CRLF output from some toolchains
+        case "$line" in
+            *:PASS)
+                body="${line%:PASS}"; tn="${body##*:}"
+                pass "$name: $tn" ;;
+            *:FAIL:*|*:FAIL)
+                body="${line%%:FAIL*}"; tn="${body##*:}"
+                fail "$name: $tn — ${line#*:FAIL}" ;;
+        esac
+    done <<< "$out"
+    # Catch crashes / ASAN aborts that produce no per-test FAIL line.
+    if [[ $rc -ne 0 && "$out" != *:FAIL* ]]; then
+        fail "$name crashed or ASAN detected a violation (exit=$rc)"
+        echo "$out"
+    fi
+}
+
 # Build the standalone validator
 echo "Building validator..."
 gcc -std=c17 -Wall -g "$SCRIPT_DIR/validate_file.c" -o "$VALIDATOR"
 echo "Built: $VALIDATOR"
 
+# Unity test framework (vendored under tests/unity, see tests/unity/LICENSE.txt)
+UNITY_SRC="$SCRIPT_DIR/unity/unity.c"
+
 # Build the queue unit test (with AddressSanitizer to catch OOB writes)
 echo "Building queue test..."
 gcc -std=c17 -Wall -g -fsanitize=address,leak \
-    -I"$ROOT/src" \
-    "$SCRIPT_DIR/test_queue.c" "$ROOT/src/queue.c" \
+    -I"$ROOT/src" -I"$SCRIPT_DIR/unity" \
+    "$SCRIPT_DIR/test_queue.c" "$ROOT/src/queue.c" "$UNITY_SRC" \
     -o "$QUEUE_TEST"
 echo "Built: $QUEUE_TEST"
 
 # Build the bitarray unit test (with AddressSanitizer to catch OOB writes)
 echo "Building bitarray test..."
 gcc -std=c17 -Wall -g -fsanitize=address,leak \
-    -I"$ROOT/src" \
-    "$SCRIPT_DIR/test_bitarray.c" "$ROOT/src/bitarray.c" \
+    -I"$ROOT/src" -I"$SCRIPT_DIR/unity" \
+    "$SCRIPT_DIR/test_bitarray.c" "$ROOT/src/bitarray.c" "$UNITY_SRC" \
     -o "$BITARRAY_TEST"
 echo "Built: $BITARRAY_TEST"
 echo
@@ -59,33 +87,11 @@ PYEOF
 
 MAXV=1000000
 
-# ---- Queue unit tests (issue #12) ----
-set +e
-QUEUE_OUT=$("$QUEUE_TEST" 2>&1); QUEUE_RC=$?
-set -e
-while IFS= read -r line; do
-    case "$line" in
-        \[PASS\]*) pass "${line#\[PASS\] }" ;;
-        \[FAIL\]*) fail "${line#\[FAIL\] }" ;;
-    esac
-done <<< "$QUEUE_OUT"
-if [[ $QUEUE_RC -ne 0 && ! "$QUEUE_OUT" == *"[FAIL]"* ]]; then
-    fail "test_queue crashed or ASAN detected a violation (exit=$QUEUE_RC)"
-fi
+# ---- Queue unit tests (issues #12, #27) ----
+run_unity "test_queue" "$QUEUE_TEST"
 
 # ---- Bitarray unit tests (issue #15) ----
-set +e
-BITARRAY_OUT=$("$BITARRAY_TEST" 2>&1); BITARRAY_RC=$?
-set -e
-while IFS= read -r line; do
-    case "$line" in
-        \[PASS\]*) pass "${line#\[PASS\] }" ;;
-        \[FAIL\]*) fail "${line#\[FAIL\] }" ;;
-    esac
-done <<< "$BITARRAY_OUT"
-if [[ $BITARRAY_RC -ne 0 && ! "$BITARRAY_OUT" == *"[FAIL]"* ]]; then
-    fail "test_bitarray crashed or ASAN detected a violation (exit=$BITARRAY_RC)"
-fi
+run_unity "test_bitarray" "$BITARRAY_TEST"
 
 # ---- Test 1: valid graph ----
 G="$TMPDIR_TESTS/valid.graph"

@@ -42,7 +42,11 @@ run-bfs: build-bfs
 
 run: run-generator run-bfs
 
+## Unit tests (Unity framework, vendored under tests/unity) + validator checks
+test: | dist
+	bash tests/run_tests.sh
+
 clean:
 	rm -f ./dist/*
 
-.PHONY: all build build-bfs build-generator run run-bfs run-generator clean
+.PHONY: all build build-bfs build-generator run run-bfs run-generator test clean

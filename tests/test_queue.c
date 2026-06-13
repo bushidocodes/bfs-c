@@ -1,29 +1,26 @@
 /*
- * Unit tests for queue reset() with should_zero_data = true (issue #12).
- * Verifies written elements are zeroed and no out-of-bounds write occurs.
- * Build with -fsanitize=address to catch OOB writes from the original bug.
+ * Unit tests for the queue (issues #12 and #27), using the Unity framework.
+ * Build with -fsanitize=address to catch OOB writes from the reset() bug.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
+#include "unity.h"
 #include "queue.h"
-
-static int pass_count = 0;
-static int fail_count = 0;
-
-static void check(const char *name, int ok)
-{
-    if (ok) { printf("[PASS] %s\n", name); pass_count++; }
-    else     { printf("[FAIL] %s\n", name); fail_count++; }
-}
+#include "constants.h"
 
 /* Use static allocation — queue is 8 MB, too large for the stack */
 static queue q;
 
-int main(void)
+void setUp(void)
 {
-    /* Test 1: reset() with should_zero_data=true clears all written elements */
     reset(&q, false);
+}
+
+void tearDown(void)
+{
+}
+
+/* Issue #12: reset() with should_zero_data=true clears all written elements */
+static void test_reset_clears_written_elements(void)
+{
     enqueue(10, &q);
     enqueue(20, &q);
     enqueue(30, &q);
@@ -31,29 +28,51 @@ int main(void)
     /* data[0]=10, data[1]=20, data[2]=30, end=4 */
     reset(&q, true);
 
-    check("reset clears data[0]", q.data[0] == 0);
-    check("reset clears data[1]", q.data[1] == 0);
-    check("reset clears data[2]", q.data[2] == 0);
-    check("reset restores start=0", q.start == 0);
-    check("reset restores end=1",   q.end   == 1);
-    check("queue is empty after reset", len(&q) == 0);
+    TEST_ASSERT_EQUAL_UINT(0, q.data[0]);
+    TEST_ASSERT_EQUAL_UINT(0, q.data[1]);
+    TEST_ASSERT_EQUAL_UINT(0, q.data[2]);
+    TEST_ASSERT_EQUAL_INT(0, q.start);
+    TEST_ASSERT_EQUAL_INT(1, q.end);
+    TEST_ASSERT_EQUAL_INT(0, len(&q));
+}
 
-    /* Test 2: reset() on a freshly initialised (empty) queue is safe */
-    reset(&q, false);
-    reset(&q, true);  /* end=1 here; original code would write data[0] and data[1] */
-    check("reset on empty queue: start=0", q.start == 0);
-    check("reset on empty queue: end=1",   q.end   == 1);
-
-    /* Test 3: enqueue/dequeue/reset round-trip */
-    reset(&q, false);
-    enqueue(42, &q);
-    unsigned long v = dequeue(&q);
-    check("dequeue returns correct value", v == 42);
-    check("queue empty after dequeue", len(&q) == 0);
+/* Issue #12: reset() on a freshly initialised (empty) queue must not write OOB */
+static void test_reset_on_empty_queue_is_safe(void)
+{
+    /* end=1 here; the original code would write data[0] and data[1] */
     reset(&q, true);
-    check("reset after dequeue: end=1", q.end == 1);
+    TEST_ASSERT_EQUAL_INT(0, q.start);
+    TEST_ASSERT_EQUAL_INT(1, q.end);
+}
 
-    printf("\nResults: %d passed, %d failed out of %d tests\n",
-           pass_count, fail_count, pass_count + fail_count);
-    return fail_count ? 1 : 0;
+static void test_enqueue_dequeue_reset_roundtrip(void)
+{
+    enqueue(42, &q);
+    TEST_ASSERT_EQUAL_UINT(42, dequeue(&q));
+    TEST_ASSERT_EQUAL_INT(0, len(&q));
+    reset(&q, true);
+    TEST_ASSERT_EQUAL_INT(1, q.end);
+}
+
+/* Issue #27: all MAXV slots must be usable. The off-by-one bug let only
+ * MAXV-1 items be stored before a spurious "Queue is full". */
+static void test_full_capacity_holds_maxv_items(void)
+{
+    for (unsigned long i = 0; i < (unsigned long)MAXV; i++)
+        enqueue(i, &q);
+
+    TEST_ASSERT_EQUAL_INT(MAXV, len(&q));
+    TEST_ASSERT_EQUAL_UINT((unsigned long)(MAXV - 1), q.data[MAXV - 1]);
+    TEST_ASSERT_EQUAL_UINT(0, dequeue(&q));
+    TEST_ASSERT_EQUAL_UINT(1, dequeue(&q));
+}
+
+int main(void)
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_reset_clears_written_elements);
+    RUN_TEST(test_reset_on_empty_queue_is_safe);
+    RUN_TEST(test_enqueue_dequeue_reset_roundtrip);
+    RUN_TEST(test_full_capacity_holds_maxv_items);
+    return UNITY_END();
 }
