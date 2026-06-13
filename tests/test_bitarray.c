@@ -1,77 +1,92 @@
 /*
- * Unit tests for bitarray set_bit / get_bit / clear_bit (issue #15).
- * Build with -fsanitize=address to catch OOB writes.
+ * Unit tests for bitarray set_bit / get_bit / clear_bit (issue #15),
+ * using the Unity framework. Build with -fsanitize=address to catch OOB writes.
  */
-#include <stdio.h>
 #include <string.h>
+#include "unity.h"
 #include "bitarray.h"
 #include "constants.h"
-
-static int pass_count = 0;
-static int fail_count = 0;
-
-static void check(const char *name, int ok)
-{
-    if (ok) { printf("[PASS] %s\n", name); pass_count++; }
-    else     { printf("[FAIL] %s\n", name); fail_count++; }
-}
 
 /* Array sized for MAXV+1 bits, matching globals.c */
 static word_t bits[BITS_TO_WORDS(MAXV + 1)];
 
-int main(void)
+void setUp(void)
 {
     memset(bits, 0, sizeof bits);
+}
 
-    /* Test 1: freshly zeroed array has no bits set */
-    check("fresh array: bit 0 is clear",        get_bit(bits, 0) == 0);
-    check("fresh array: bit 31 is clear",       get_bit(bits, 31) == 0);
-    check("fresh array: bit 32 is clear",       get_bit(bits, 32) == 0);
-    check("fresh array: bit MAXV is clear",     get_bit(bits, MAXV) == 0);
+void tearDown(void)
+{
+}
 
-    /* Test 2: set_bit / get_bit round-trip */
+static void test_fresh_array_has_no_bits_set(void)
+{
+    TEST_ASSERT_EQUAL_INT(0, get_bit(bits, 0));
+    TEST_ASSERT_EQUAL_INT(0, get_bit(bits, 31));
+    TEST_ASSERT_EQUAL_INT(0, get_bit(bits, 32));
+    TEST_ASSERT_EQUAL_INT(0, get_bit(bits, MAXV));
+}
+
+static void test_set_get_roundtrip(void)
+{
     set_bit(bits, 0);
-    check("set bit 0: get returns 1",           get_bit(bits, 0) == 1);
+    TEST_ASSERT_EQUAL_INT(1, get_bit(bits, 0));
 
     set_bit(bits, 31);
-    check("set bit 31: get returns 1",          get_bit(bits, 31) == 1);
+    TEST_ASSERT_EQUAL_INT(1, get_bit(bits, 31));
 
-    set_bit(bits, 32);
-    check("set bit 32 (next word): get returns 1", get_bit(bits, 32) == 1);
+    set_bit(bits, 32); /* first bit of next word */
+    TEST_ASSERT_EQUAL_INT(1, get_bit(bits, 32));
 
     set_bit(bits, MAXV);
-    check("set bit MAXV: get returns 1",        get_bit(bits, MAXV) == 1);
+    TEST_ASSERT_EQUAL_INT(1, get_bit(bits, MAXV));
+}
 
-    /* Test 3: adjacent bits are not affected */
-    memset(bits, 0, sizeof bits);
+static void test_set_does_not_affect_adjacent_bits(void)
+{
     set_bit(bits, 5);
-    check("set bit 5: bit 4 unaffected",        get_bit(bits, 4) == 0);
-    check("set bit 5: bit 6 unaffected",        get_bit(bits, 6) == 0);
-    check("set bit 5: bit 37 unaffected",       get_bit(bits, 37) == 0);
+    TEST_ASSERT_EQUAL_INT(0, get_bit(bits, 4));
+    TEST_ASSERT_EQUAL_INT(0, get_bit(bits, 6));
+    TEST_ASSERT_EQUAL_INT(0, get_bit(bits, 37));
+}
 
-    /* Test 4: set_bit is idempotent */
+static void test_set_is_idempotent(void)
+{
     set_bit(bits, 5);
-    check("set bit 5 twice: still 1",           get_bit(bits, 5) == 1);
+    set_bit(bits, 5);
+    TEST_ASSERT_EQUAL_INT(1, get_bit(bits, 5));
+}
 
-    /* Test 5: clear_bit */
-    memset(bits, 0, sizeof bits);
+static void test_clear_bit(void)
+{
     set_bit(bits, 10);
     set_bit(bits, 11);
     clear_bit(bits, 10);
-    check("clear bit 10: get returns 0",        get_bit(bits, 10) == 0);
-    check("clear bit 10: bit 11 unaffected",    get_bit(bits, 11) == 1);
+    TEST_ASSERT_EQUAL_INT(0, get_bit(bits, 10));
+    TEST_ASSERT_EQUAL_INT(1, get_bit(bits, 11));
+}
 
-    /* Test 6: word boundary — bit 31 (last in word 0) and bit 32 (first in word 1) */
-    memset(bits, 0, sizeof bits);
+/* Word boundary — bit 31 (last in word 0) and bit 32 (first in word 1) */
+static void test_word_boundary_independence(void)
+{
     set_bit(bits, 31);
     set_bit(bits, 32);
-    check("bits 31 and 32 both set independently",
-          get_bit(bits, 31) == 1 && get_bit(bits, 32) == 1);
-    clear_bit(bits, 31);
-    check("clear bit 31: bit 32 unaffected",    get_bit(bits, 32) == 1);
-    check("clear bit 31: bit 31 is now 0",      get_bit(bits, 31) == 0);
+    TEST_ASSERT_EQUAL_INT(1, get_bit(bits, 31));
+    TEST_ASSERT_EQUAL_INT(1, get_bit(bits, 32));
 
-    printf("\nResults: %d passed, %d failed out of %d tests\n",
-           pass_count, fail_count, pass_count + fail_count);
-    return fail_count ? 1 : 0;
+    clear_bit(bits, 31);
+    TEST_ASSERT_EQUAL_INT(1, get_bit(bits, 32));
+    TEST_ASSERT_EQUAL_INT(0, get_bit(bits, 31));
+}
+
+int main(void)
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_fresh_array_has_no_bits_set);
+    RUN_TEST(test_set_get_roundtrip);
+    RUN_TEST(test_set_does_not_affect_adjacent_bits);
+    RUN_TEST(test_set_is_idempotent);
+    RUN_TEST(test_clear_bit);
+    RUN_TEST(test_word_boundary_independence);
+    return UNITY_END();
 }
