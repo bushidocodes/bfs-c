@@ -215,7 +215,6 @@ void read_graph(void)
             printf("Dispatching to %llu\n", i % noProcesses);
             if (fread(newEdgerecord, sizeof(struct edgerecord), 1, fp) != 1) {
                 fprintf(stderr, "read_graph: failed to read edge record %llu\n", i);
-                free(newEdgerecord);
                 fclose(fp);
                 MPI_Abort(MPI_COMM_WORLD, 1);
             }
