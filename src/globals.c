@@ -171,27 +171,24 @@ void read_graph(void)
 
     if (processId == 0)
     {
+        // MPI_Abort() terminates the process, so the abort paths below do not
+        // free()/fclose() first: that cleanup is unreachable and CodeQL flags
+        // it as a double-free / use-after-free against the success-path free().
         header *newHeader = malloc(sizeof(header));
         if (newHeader == NULL) { fprintf(stderr, "malloc failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
         newEdgerecord = malloc(sizeof(edgerecord));
-        if (newEdgerecord == NULL) { free(newHeader); fprintf(stderr, "malloc failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
+        if (newEdgerecord == NULL) { fprintf(stderr, "malloc failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
 
         fp = fopen(FILE_PATH, "r");
-        if (fp == NULL) { free(newHeader); free(newEdgerecord); fprintf(stderr, "fopen failed: %s\n", FILE_PATH); MPI_Abort(MPI_COMM_WORLD, 1); }
+        if (fp == NULL) { fprintf(stderr, "fopen failed: %s\n", FILE_PATH); MPI_Abort(MPI_COMM_WORLD, 1); }
 
         if (fread(newHeader, sizeof(struct header), 1, fp) != 1) {
             fprintf(stderr, "read_graph: failed to read header from %s\n", FILE_PATH);
-            free(newHeader);
-            free(newEdgerecord);
-            fclose(fp);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         if (newHeader->numVertices > MAXV) {
             fprintf(stderr, "graph file numVertices %lu exceeds MAXV %d\n",
                     newHeader->numVertices, MAXV);
-            free(newHeader);
-            free(newEdgerecord);
-            fclose(fp);
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         for (int i = 0; i < noProcesses; i++)
@@ -215,7 +212,6 @@ void read_graph(void)
             printf("Dispatching to %llu\n", i % noProcesses);
             if (fread(newEdgerecord, sizeof(struct edgerecord), 1, fp) != 1) {
                 fprintf(stderr, "read_graph: failed to read edge record %llu\n", i);
-                fclose(fp);
                 MPI_Abort(MPI_COMM_WORLD, 1);
             }
             printf("New Edge Record %lu %lu\n", newEdgerecord->source, newEdgerecord->destination);
